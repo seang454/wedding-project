@@ -12,16 +12,22 @@ import { Gift } from '../modules/gifts/entities/gift.entity';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        url: configService.get<string>('DATABASE_URL'),
-        entities: [User, Wedding, BankAccount, Guest, Gift],
-        synchronize: configService.get<string>('NODE_ENV') !== 'production', // Automatically creates/updates tables in development
-        ssl:
-          configService.get<string>('NODE_ENV') === 'production'
-            ? { rejectUnauthorized: false }
-            : false,
-      }),
+      useFactory: (configService: ConfigService) => {
+        const dbUrl = configService.get<string>('DATABASE_URL') || '';
+        const isProd = configService.get<string>('NODE_ENV') === 'production';
+        const forceSync = configService.get<string>('DB_SYNCHRONIZE') === 'true';
+
+        return {
+          type: 'postgres',
+          url: dbUrl,
+          entities: [User, Wedding, BankAccount, Guest, Gift],
+          synchronize: !isProd || forceSync,
+          ssl:
+            isProd || dbUrl.includes('sslmode=require')
+              ? { rejectUnauthorized: false }
+              : false,
+        };
+      },
     }),
   ],
 })

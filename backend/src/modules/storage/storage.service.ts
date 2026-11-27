@@ -105,7 +105,19 @@ export class StorageService implements OnModuleInit {
       expiresIn: 300,
     });
 
-    const fileUrl = `${this.endpoint}/${this.bucketName}/${uniqueKey}`;
+    const customPublicUrl = this.configService
+      .get<string>('S3_PUBLIC_URL')
+      ?.replace(/\/$/, '');
+
+    let fileUrl = `${this.endpoint}/${this.bucketName}/${uniqueKey}`;
+    if (customPublicUrl) {
+      fileUrl = `${customPublicUrl}/${uniqueKey}`;
+    } else if (this.endpoint.includes('/storage/v1/s3')) {
+      const publicBase = this.endpoint
+        .replace('storage.supabase.co/storage/v1/s3', 'supabase.co/storage/v1/object/public')
+        .replace('/storage/v1/s3', '/storage/v1/object/public');
+      fileUrl = `${publicBase}/${this.bucketName}/${uniqueKey}`;
+    }
 
     return {
       uploadUrl,
