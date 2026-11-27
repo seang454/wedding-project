@@ -56,7 +56,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-10 bg-[#FAF8F3] text-[#2B3927] selection:bg-[#E2EBE0] selection:text-[#2B3927] overflow-hidden font-khmer-body">
+    <div className="relative min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 lg:p-10 bg-[#FAF8F3] text-[#2B3927] selection:bg-[#E2EBE0] selection:text-[#2B3927] overflow-hidden font-khmer-body">
       {/* HOMEPAGE MATCHING BACKGROUND TEXTURE */}
       <div
         className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none opacity-95 transition-opacity duration-700"
@@ -65,7 +65,7 @@ export default function RegisterPage() {
       <div className="fixed inset-0 z-0 bg-gradient-to-b from-[#FAF8F3]/15 via-transparent to-[#FAF8F3]/25 pointer-events-none" />
 
       {/* TOP LEFT BACK TO HOME BUTTON */}
-      <div className="absolute top-4 sm:top-8 left-4 sm:left-8 z-30 font-khmer-heading">
+      <div className="relative z-30 self-start mb-3 lg:mb-0 lg:absolute lg:top-8 lg:left-8 font-khmer-heading">
         <Link
           href="/"
           className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-b from-white/35 via-white/10 to-white/25 hover:from-white/55 hover:to-white/40 text-[#2B3927] text-xs font-semibold border border-white/85 shadow-[0_8px_24px_rgba(36,53,33,0.12),inset_0_1.5px_2px_rgba(255,255,255,0.95)] backdrop-blur-md backdrop-saturate-150 transition-all hover:border-[#C59F54]/70"
