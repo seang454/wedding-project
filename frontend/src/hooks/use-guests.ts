@@ -6,14 +6,32 @@ import { Guest, BatchGuestItem } from '@/types/guest.types';
 import { PaginatedResponse } from '@/types/api.types';
 import { CreateGuestFormData } from '@/schemas/guest.schema';
 
-/** GET /guests/wedding/:weddingId?page=&take= */
-export function useGuests(weddingId: string, page = 1, take = 20) {
+/** GET /guests/wedding/:weddingId?page=&take=&search=&side=&status=&tableNumber= */
+export function useGuests(
+  weddingId: string,
+  page = 1,
+  take = 20,
+  filters?: {
+    search?: string;
+    side?: string;
+    status?: string;
+    tableNumber?: string;
+  },
+) {
+  const search = filters?.search?.trim() || '';
+  const side = filters?.side || '';
+  const status = filters?.status || '';
+  const tableNumber = filters?.tableNumber || '';
+
   return useQuery<PaginatedResponse<Guest>>({
-    queryKey: ['guests', weddingId, page, take],
+    queryKey: ['guests', weddingId, page, take, search, side, status, tableNumber],
     queryFn: async () => {
-      const res = await apiClient.get(
-        `/guests/wedding/${weddingId}?page=${page}&take=${take}`,
-      );
+      let url = `/guests/wedding/${weddingId}?page=${page}&take=${take}`;
+      if (search) url += `&search=${encodeURIComponent(search)}`;
+      if (side) url += `&side=${encodeURIComponent(side)}`;
+      if (status) url += `&status=${encodeURIComponent(status)}`;
+      if (tableNumber) url += `&tableNumber=${encodeURIComponent(tableNumber)}`;
+      const res = await apiClient.get(url);
       return res.data;
     },
     enabled: !!weddingId,

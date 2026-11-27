@@ -115,9 +115,18 @@ export class GuestsController {
     @Param('weddingId', ParseUUIDPipe) weddingId: string,
     @Query() pageOptionsDto: PageOptionsDto,
     @CurrentUser() user: User,
+    @Query('search') search?: string,
+    @Query('side') side?: string,
+    @Query('status') status?: string,
+    @Query('tableNumber') tableNumber?: string,
   ) {
     await this.weddingAccessService.assertAccess(weddingId, user);
-    return this.guestsService.findAll(weddingId, pageOptionsDto);
+    return this.guestsService.findAll(weddingId, pageOptionsDto, {
+      search,
+      side,
+      status,
+      tableNumber,
+    });
   }
 
   @Get(':id')

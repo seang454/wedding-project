@@ -51,12 +51,45 @@ export class GuestsService {
   async findAll(
     weddingId: string,
     pageOptionsDto: PageOptionsDto,
+    filters?: {
+      search?: string;
+      side?: string;
+      status?: string;
+      tableNumber?: string;
+    },
   ): Promise<PageDto<Guest>> {
     const queryBuilder = this.guestRepository.createQueryBuilder('guest');
 
     queryBuilder
       .leftJoinAndSelect('guest.gifts', 'gift')
-      .where('guest.weddingId = :weddingId', { weddingId })
+      .where('guest.weddingId = :weddingId', { weddingId });
+
+    const strippedSearch = filters?.search?.replace(/\s+/g, '');
+    if (strippedSearch) {
+      queryBuilder.andWhere(
+        "(LOWER(REGEXP_REPLACE(guest.name, '\\s+', '', 'g')) LIKE LOWER(:search) OR REGEXP_REPLACE(COALESCE(guest.phone, ''), '\\s+', '', 'g') LIKE :search)",
+        { search: `%${strippedSearch}%` },
+      );
+    }
+
+    if (filters?.side) {
+      queryBuilder.andWhere('guest.side = :side', { side: filters.side });
+    }
+
+    if (filters?.status) {
+      queryBuilder.andWhere('guest.invitationStatus = :status', {
+        status: filters.status,
+      });
+    }
+
+    if (filters?.tableNumber) {
+      const tableNum = parseInt(filters.tableNumber, 10);
+      if (!isNaN(tableNum)) {
+        queryBuilder.andWhere('guest.tableNumber = :tableNum', { tableNum });
+      }
+    }
+
+    queryBuilder
       .orderBy('guest.createdAt', pageOptionsDto.order || 'DESC')
       .skip(pageOptionsDto.skip)
       .take(pageOptionsDto.take);

@@ -54,7 +54,12 @@ export default function GuestsPage() {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   // Queries & Mutations
-  const { data: guestsData, isLoading } = useGuests(weddingId, page, take);
+  const { data: guestsData, isLoading } = useGuests(weddingId, page, take, {
+    search: searchTerm,
+    side: sideFilter,
+    status: statusFilter,
+    tableNumber: tableFilter,
+  });
   const createGuestMutation = useCreateGuest(weddingId);
   const updateGuestMutation = useUpdateGuest(weddingId);
   const updateGiftMutation = useUpdateGift(weddingId);
@@ -543,7 +548,10 @@ export default function GuestsPage() {
             <Input
               placeholder="ស្វែងរកតាមឈ្មោះ ឬលេខទូរស័ព្ទ..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setPage(1);
+              }}
               className="pl-9 bg-white/70 backdrop-blur-sm border-[#D8C7A8] rounded-xl h-10 text-xs sm:text-sm"
             />
           </div>
@@ -551,7 +559,10 @@ export default function GuestsPage() {
             <div className="w-full sm:w-40">
               <CustomSelect
                 value={sideFilter}
-                onChange={setSideFilter}
+                onChange={(val) => {
+                  setSideFilter(val);
+                  setPage(1);
+                }}
                 searchable={false}
                 options={[
                   { value: '', label: 'ខាងទាំងអស់' },
@@ -566,7 +577,10 @@ export default function GuestsPage() {
             <div className="w-full sm:w-40">
               <CustomSelect
                 value={statusFilter}
-                onChange={setStatusFilter}
+                onChange={(val) => {
+                  setStatusFilter(val);
+                  setPage(1);
+                }}
                 searchable={false}
                 options={[
                   { value: '', label: 'ស្ថានភាពទាំងអស់' },
@@ -580,7 +594,10 @@ export default function GuestsPage() {
             <div className="w-full sm:w-36">
               <CustomSelect
                 value={tableFilter}
-                onChange={setTableFilter}
+                onChange={(val) => {
+                  setTableFilter(val);
+                  setPage(1);
+                }}
                 options={[
                   { value: '', label: 'តុទាំងអស់' },
                   ...availableTables.map((t) => ({ value: String(t), label: `តុលេខ ${t}` })),
@@ -599,6 +616,7 @@ export default function GuestsPage() {
                   setSideFilter('');
                   setStatusFilter('');
                   setTableFilter('');
+                  setPage(1);
                 }}
                 className="h-10 rounded-xl border-[#D8C7A8] text-[#3E513A] hover:bg-[#EAE4D5] text-xs px-3 cursor-pointer"
               >
