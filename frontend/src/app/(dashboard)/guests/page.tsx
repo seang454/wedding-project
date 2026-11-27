@@ -190,17 +190,17 @@ export default function GuestsPage() {
             ops.push(
               updateGiftMutation.mutateAsync({
                 id: editingGuest.usdGiftId,
-                data: { ...common, amount: Number(editingGuest.usdAmount) || 0, currency: 'USD' },
+                data: { ...common, amountUSD: Number(editingGuest.usdAmount) || 0, amountKHR: 0 },
               }),
             );
-            if (editingGuest.khrGiftId) {
+            if (editingGuest.khrGiftId && editingGuest.khrGiftId !== editingGuest.usdGiftId) {
               ops.push(deleteGiftMutation.mutateAsync(editingGuest.khrGiftId));
             }
           } else if (editingGuest.khrGiftId) {
             ops.push(
               updateGiftMutation.mutateAsync({
                 id: editingGuest.khrGiftId,
-                data: { ...common, amount: Number(editingGuest.usdAmount) || 0, currency: 'USD' },
+                data: { ...common, amountUSD: Number(editingGuest.usdAmount) || 0, amountKHR: 0 },
               }),
             );
           }
@@ -209,84 +209,41 @@ export default function GuestsPage() {
             ops.push(
               updateGiftMutation.mutateAsync({
                 id: editingGuest.khrGiftId,
-                data: { ...common, amount: Number(editingGuest.khrAmount) || 0, currency: 'KHR' },
+                data: { ...common, amountUSD: 0, amountKHR: Number(editingGuest.khrAmount) || 0 },
               }),
             );
-            if (editingGuest.usdGiftId) {
+            if (editingGuest.usdGiftId && editingGuest.usdGiftId !== editingGuest.khrGiftId) {
               ops.push(deleteGiftMutation.mutateAsync(editingGuest.usdGiftId));
             }
           } else if (editingGuest.usdGiftId) {
             ops.push(
               updateGiftMutation.mutateAsync({
                 id: editingGuest.usdGiftId,
-                data: { ...common, amount: Number(editingGuest.khrAmount) || 0, currency: 'KHR' },
+                data: { ...common, amountUSD: 0, amountKHR: Number(editingGuest.khrAmount) || 0 },
               }),
             );
           }
         } else {
-          // BOTH: USD & KHR
-          if (editingGuest.usdGiftId) {
+          // BOTH: USD & KHR (single-row update if same giftId or only one exists)
+          const targetId = editingGuest.usdGiftId || editingGuest.khrGiftId;
+          if (targetId) {
             ops.push(
               updateGiftMutation.mutateAsync({
-                id: editingGuest.usdGiftId,
-                data: { ...common, amount: Number(editingGuest.usdAmount) || 0, currency: 'USD' },
+                id: targetId,
+                data: {
+                  ...common,
+                  amountUSD: Number(editingGuest.usdAmount) || 0,
+                  amountKHR: Number(editingGuest.khrAmount) || 0,
+                },
               }),
             );
-          } else if (Number(editingGuest.usdAmount) > 0) {
-            ops.push(
-              recordGiftMutation.mutateAsync({
-                weddingId,
-                guestId: editingGuest.id,
-                guestNameSnapshot: editingGuest.name.trim(),
-                currencyMode: 'USD',
-                currency: 'USD',
-                amount: Number(editingGuest.usdAmount),
-                amountUSD: Number(editingGuest.usdAmount),
-                amountKHR: 0,
-                paymentMethod: editingGuest.giftPaymentMethod,
-                wishes: editingGuest.giftWishes?.trim() || undefined,
-                createGuestProfile: false,
-                phone: undefined,
-                tableNumber: undefined,
-                province: undefined,
-                district: undefined,
-                commune: undefined,
-                village: undefined,
-                guestNote: undefined,
-              }),
-            );
-          }
-
-          if (editingGuest.khrGiftId) {
-            ops.push(
-              updateGiftMutation.mutateAsync({
-                id: editingGuest.khrGiftId,
-                data: { ...common, amount: Number(editingGuest.khrAmount) || 0, currency: 'KHR' },
-              }),
-            );
-          } else if (Number(editingGuest.khrAmount) > 0) {
-            ops.push(
-              recordGiftMutation.mutateAsync({
-                weddingId,
-                guestId: editingGuest.id,
-                guestNameSnapshot: editingGuest.name.trim(),
-                currencyMode: 'KHR',
-                currency: 'KHR',
-                amount: Number(editingGuest.khrAmount),
-                amountUSD: 0,
-                amountKHR: Number(editingGuest.khrAmount),
-                paymentMethod: editingGuest.giftPaymentMethod,
-                wishes: editingGuest.giftWishes?.trim() || undefined,
-                createGuestProfile: false,
-                phone: undefined,
-                tableNumber: undefined,
-                province: undefined,
-                district: undefined,
-                commune: undefined,
-                village: undefined,
-                guestNote: undefined,
-              }),
-            );
+            if (
+              editingGuest.usdGiftId &&
+              editingGuest.khrGiftId &&
+              editingGuest.khrGiftId !== editingGuest.usdGiftId
+            ) {
+              ops.push(deleteGiftMutation.mutateAsync(editingGuest.khrGiftId));
+            }
           }
         }
 
@@ -703,11 +660,17 @@ export default function GuestsPage() {
                           setEditProvinceCode(pCode);
                           setEditDistrictCode(dCode);
                           const guestGifts = guest.gifts || [];
-                          const usdGift = guestGifts.find((g) => g.currency === 'USD');
-                          const khrGift = guestGifts.find((g) => g.currency === 'KHR');
+                          const firstGift = guestGifts[0];
+                          const totalUSD = guestGifts.reduce(
+                            (sum, g) => sum + (Number(g.amountUSD ?? (g.currency === 'USD' ? g.amount : 0)) || 0),
+                            0,
+                          );
+                          const totalKHR = guestGifts.reduce(
+                            (sum, g) => sum + (Number(g.amountKHR ?? (g.currency === 'KHR' ? g.amount : 0)) || 0),
+                            0,
+                          );
                           const initialMode: 'USD' | 'KHR' | 'BOTH' =
-                            usdGift && khrGift ? 'BOTH' : usdGift ? 'USD' : 'KHR';
-                          const firstGift = usdGift || khrGift || guestGifts[0];
+                            totalUSD > 0 && totalKHR > 0 ? 'BOTH' : totalUSD > 0 ? 'USD' : 'KHR';
 
                           setEditingGuest({
                             id: guest.id,
@@ -724,10 +687,10 @@ export default function GuestsPage() {
                             notes: guest.notes,
                             hasGifts: guestGifts.length > 0,
                             giftMode: initialMode,
-                            usdGiftId: usdGift?.id,
-                            usdAmount: usdGift ? Number(usdGift.amount) || 0 : 15,
-                            khrGiftId: khrGift?.id,
-                            khrAmount: khrGift ? Number(khrGift.amount) || 0 : 60000,
+                            usdGiftId: firstGift?.id,
+                            usdAmount: totalUSD > 0 ? totalUSD : 15,
+                            khrGiftId: guestGifts[1]?.id || firstGift?.id,
+                            khrAmount: totalKHR > 0 ? totalKHR : 60000,
                             giftPaymentMethod: firstGift?.paymentMethod || 'CASH',
                             giftWishes: firstGift?.wishes || '',
                           });

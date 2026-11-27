@@ -6,7 +6,19 @@ export class UpdateGiftDto {
   @ApiPropertyOptional({ example: 50 })
   @IsOptional()
   @IsNumber()
-  @Min(0.01)
+  @Min(0)
+  amountUSD?: number;
+
+  @ApiPropertyOptional({ example: 60000 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  amountKHR?: number;
+
+  @ApiPropertyOptional({ example: 50 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
   amount?: number;
 
   @ApiPropertyOptional({ enum: GiftCurrency })

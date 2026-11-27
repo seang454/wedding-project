@@ -96,6 +96,7 @@ export default function GiftsPage() {
       amount: 60000,
       amountKHR: 60000,
       amountUSD: 15,
+      side: 'BOTH',
       createGuestProfile: true,
     },
   });
@@ -115,6 +116,7 @@ export default function GiftsPage() {
       amount: 60000,
       amountKHR: 60000,
       amountUSD: 15,
+      side: 'BOTH',
       createGuestProfile: true,
       phone: '',
       tableNumber: undefined,
@@ -419,12 +421,13 @@ export default function GiftsPage() {
                 for (const gift of rawGifts) {
                   const guestKey = gift.guestId || gift.guestNameSnapshot || gift.id;
                   const key = `${guestKey}::${gift.paymentMethod}`;
-                  const amount = Number(gift.amount) || 0;
+                  const amountUSD = Number(gift.amountUSD ?? (gift.currency === 'USD' ? gift.amount : 0)) || 0;
+                  const amountKHR = Number(gift.amountKHR ?? (gift.currency === 'KHR' ? gift.amount : 0)) || 0;
                   const existing = map.get(key);
                   if (existing) {
                     existing.giftIds.push(gift.id);
-                    if (gift.currency === 'USD') existing.usdAmt += amount;
-                    else if (gift.currency === 'KHR') existing.khrAmt += amount;
+                    existing.usdAmt += amountUSD;
+                    existing.khrAmt += amountKHR;
                     if (!existing.receiptImageUrl && gift.receiptImageUrl) {
                       existing.receiptImageUrl = gift.receiptImageUrl;
                     }
@@ -437,8 +440,8 @@ export default function GiftsPage() {
                       recordedByUser: gift.recordedByUser,
                       createdAt: gift.createdAt,
                       receiptImageUrl: gift.receiptImageUrl,
-                      usdAmt: gift.currency === 'USD' ? amount : 0,
-                      khrAmt: gift.currency === 'KHR' ? amount : 0,
+                      usdAmt: amountUSD,
+                      khrAmt: amountKHR,
                     });
                   }
                 }
@@ -738,6 +741,47 @@ export default function GiftsPage() {
                         placeholder="ឧ. 12"
                         className="h-11 bg-white border-[#DFD5C3] focus:border-[#C59F54] rounded-xl text-sm font-khmer-body text-[#212E1E] transition-all"
                       />
+                  </div>
+                </div>
+
+                {/* Guest Side Selection (Groom / Bride / Both) */}
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-[#3E513A] font-khmer-body block">
+                    ខាងភ្ញៀវ
+                  </label>
+                  <div className="flex flex-wrap items-center gap-4">
+                    {[
+                      { value: 'GROOM', label: 'ខាងកូនកំលោះ' },
+                      { value: 'BRIDE', label: 'ខាងកូនក្រមុំ' },
+                      { value: 'BOTH', label: 'ទាំងសងខាង' },
+                    ].map((opt) => {
+                      const active = (watch('side') || 'BOTH') === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() =>
+                            setValue('side', opt.value as 'GROOM' | 'BRIDE' | 'BOTH', {
+                              shouldValidate: true,
+                            })
+                          }
+                          className="flex items-center gap-2 text-xs font-medium cursor-pointer group"
+                        >
+                          <span
+                            className={`h-4 w-4 rounded-full border flex items-center justify-center transition-colors ${
+                              active
+                                ? 'border-[#243521] bg-white'
+                                : 'border-[#D8C7A8] group-hover:border-[#C59F54]'
+                            }`}
+                          >
+                            {active && <span className="h-2 w-2 rounded-full bg-[#243521]" />}
+                          </span>
+                          <span className={active ? 'text-[#212E1E] font-semibold' : 'text-[#63765E]'}>
+                            {opt.label}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 

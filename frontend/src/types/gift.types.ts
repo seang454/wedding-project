@@ -6,8 +6,10 @@ export interface Gift {
   weddingId: string;
   guestId?: string;
   guestNameSnapshot: string;
-  amount: number;
-  currency: GiftCurrency;
+  amountUSD: number;
+  amountKHR: number;
+  amount?: number;
+  currency?: GiftCurrency;
   paymentMethod: PaymentMethod;
   bankAccountId?: string;
   transactionRef?: string;

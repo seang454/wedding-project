@@ -92,11 +92,12 @@ function ClerkReconciliationDetailContent() {
     for (const gift of gifts) {
       const guestKey = gift.guestId || gift.guestNameSnapshot || gift.id;
       const key = `${guestKey}::${gift.paymentMethod}`;
-      const amount = Number(gift.amount) || 0;
+      const amountUSD = Number(gift.amountUSD ?? (gift.currency === 'USD' ? gift.amount : 0)) || 0;
+      const amountKHR = Number(gift.amountKHR ?? (gift.currency === 'KHR' ? gift.amount : 0)) || 0;
       const existing = map.get(key);
       if (existing) {
-        if (gift.currency === 'USD') existing.usdAmt += amount;
-        else if (gift.currency === 'KHR') existing.khrAmt += amount;
+        existing.usdAmt += amountUSD;
+        existing.khrAmt += amountKHR;
         if (!existing.wishes && gift.wishes) existing.wishes = gift.wishes;
       } else {
         map.set(key, {
@@ -105,8 +106,8 @@ function ClerkReconciliationDetailContent() {
           guestNameSnapshot: gift.guestNameSnapshot,
           paymentMethod: gift.paymentMethod,
           wishes: gift.wishes,
-          usdAmt: gift.currency === 'USD' ? amount : 0,
-          khrAmt: gift.currency === 'KHR' ? amount : 0,
+          usdAmt: amountUSD,
+          khrAmt: amountKHR,
         });
       }
     }

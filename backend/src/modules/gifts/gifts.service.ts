@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Gift, GiftCurrency, PaymentMethod } from './entities/gift.entity';
-import { Guest, InvitationStatus } from '../guests/entities/guest.entity';
+import { Guest, GuestSide, InvitationStatus } from '../guests/entities/guest.entity';
 import { RecordGiftDto } from './dto/record-gift.dto';
 import { UpdateGiftDto } from './dto/update-gift.dto';
 import { QueryGiftDto } from './dto/query-gift.dto';
@@ -40,6 +40,7 @@ export class GiftsService {
           weddingId: dto.weddingId,
           name: dto.guestNameSnapshot,
           phone: dto.phone,
+          side: dto.side || GuestSide.BOTH,
           tableNumber: dto.tableNumber,
           province: dto.province,
           district: dto.district,
@@ -61,6 +62,7 @@ export class GiftsService {
         if (existingGuest) {
           existingGuest.invitationStatus = InvitationStatus.ATTENDED;
           if (dto.phone) existingGuest.phone = dto.phone;
+          if (dto.side) existingGuest.side = dto.side;
           if (dto.tableNumber) existingGuest.tableNumber = dto.tableNumber;
           if (dto.province) existingGuest.province = dto.province;
           if (dto.district) existingGuest.district = dto.district;
@@ -71,45 +73,39 @@ export class GiftsService {
         }
       }
 
-      // Determine gift entries (supports USD-only, KHR-only, or BOTH USD & KHR in one submission)
-      const entries: Array<{ amount: number; currency: GiftCurrency }> = [];
-      const usdAmount = Number(dto.amountUSD) || 0;
-      const khrAmount = Number(dto.amountKHR) || 0;
+      // Determine USD & KHR amounts (stored in a single row per envelope)
+      let usdAmount = Number(dto.amountUSD) || 0;
+      let khrAmount = Number(dto.amountKHR) || 0;
 
-      if (usdAmount > 0 || khrAmount > 0) {
-        if (usdAmount > 0) entries.push({ amount: usdAmount, currency: GiftCurrency.USD });
-        if (khrAmount > 0) entries.push({ amount: khrAmount, currency: GiftCurrency.KHR });
-      } else if (dto.amount && Number(dto.amount) > 0) {
-        entries.push({
-          amount: Number(dto.amount),
-          currency: dto.currency || GiftCurrency.USD,
-        });
+      if (usdAmount === 0 && khrAmount === 0 && dto.amount && Number(dto.amount) > 0) {
+        if (dto.currency === GiftCurrency.KHR) {
+          khrAmount = Number(dto.amount);
+        } else {
+          usdAmount = Number(dto.amount);
+        }
       }
 
-      if (entries.length === 0) {
+      if (usdAmount <= 0 && khrAmount <= 0) {
         throw new BadRequestException('At least one positive gift amount (USD or KHR) is required');
       }
 
-      // Record the Gift(s) atomically
+      // Record single Gift row atomically
       const giftRepo = manager.getRepository(Gift);
-      const giftsToSave = entries.map((entry) =>
-        giftRepo.create({
-          weddingId: dto.weddingId,
-          guestId: targetGuestId,
-          guestNameSnapshot: dto.guestNameSnapshot,
-          amount: entry.amount,
-          currency: entry.currency,
-          paymentMethod: dto.paymentMethod,
-          bankAccountId: dto.bankAccountId,
-          transactionRef: dto.transactionRef,
-          receiptImageUrl: dto.receiptImageUrl,
-          wishes: dto.wishes,
-          recordedBy: clerkId,
-        }),
-      );
+      const newGift = giftRepo.create({
+        weddingId: dto.weddingId,
+        guestId: targetGuestId,
+        guestNameSnapshot: dto.guestNameSnapshot,
+        amountUSD: usdAmount,
+        amountKHR: khrAmount,
+        paymentMethod: dto.paymentMethod,
+        bankAccountId: dto.bankAccountId,
+        transactionRef: dto.transactionRef,
+        receiptImageUrl: dto.receiptImageUrl,
+        wishes: dto.wishes,
+        recordedBy: clerkId,
+      });
 
-      const savedGifts = await giftRepo.save(giftsToSave);
-      return savedGifts[0];
+      return giftRepo.save(newGift);
     });
   }
 
@@ -121,8 +117,10 @@ export class GiftsService {
       .leftJoinAndSelect('gift.recordedByUser', 'clerk')
       .where('gift.weddingId = :weddingId', { weddingId: queryDto.weddingId });
 
-    if (queryDto.currency) {
-      qb.andWhere('gift.currency = :currency', { currency: queryDto.currency });
+    if (queryDto.currency === GiftCurrency.USD) {
+      qb.andWhere('gift.amountUSD > 0');
+    } else if (queryDto.currency === GiftCurrency.KHR) {
+      qb.andWhere('gift.amountKHR > 0');
     }
 
     if (queryDto.paymentMethod) {
@@ -163,41 +161,64 @@ export class GiftsService {
   }
 
   async getSummary(weddingId: string): Promise<GiftSummaryResponseDto[]> {
-    const rawResults = await this.giftRepository
+    const raw = await this.giftRepository
       .createQueryBuilder('gift')
-      .select('gift.currency', 'currency')
-      .addSelect('COUNT(gift.id)', 'totalEnvelopes')
-      .addSelect('SUM(gift.amount)', 'totalAmount')
+      .select('COUNT(gift.id)', 'totalEnvelopes')
+      .addSelect('COALESCE(SUM(gift.amount_usd), 0)', 'totalUSD')
+      .addSelect('COALESCE(SUM(gift.amount_khr), 0)', 'totalKHR')
       .addSelect(
-        `SUM(CASE WHEN gift.payment_method = 'CASH' THEN gift.amount ELSE 0 END)`,
-        'totalCash',
+        `COALESCE(SUM(CASE WHEN gift.payment_method = 'CASH' THEN gift.amount_usd ELSE 0 END), 0)`,
+        'cashUSD',
+      )
+      .addSelect(
+        `COALESCE(SUM(CASE WHEN gift.payment_method = 'CASH' THEN gift.amount_khr ELSE 0 END), 0)`,
+        'cashKHR',
+      )
+      .addSelect(
+        `COALESCE(SUM(CASE WHEN gift.payment_method != 'CASH' THEN gift.amount_usd ELSE 0 END), 0)`,
+        'qrUSD',
+      )
+      .addSelect(
+        `COALESCE(SUM(CASE WHEN gift.payment_method != 'CASH' THEN gift.amount_khr ELSE 0 END), 0)`,
+        'qrKHR',
       )
       .addSelect(
         `COUNT(CASE WHEN gift.payment_method = 'CASH' THEN 1 ELSE NULL END)`,
         'countCash',
       )
       .addSelect(
-        `SUM(CASE WHEN gift.payment_method != 'CASH' THEN gift.amount ELSE 0 END)`,
-        'totalQr',
-      )
-      .addSelect(
         `COUNT(CASE WHEN gift.payment_method != 'CASH' THEN 1 ELSE NULL END)`,
         'countQr',
       )
       .where('gift.weddingId = :weddingId', { weddingId })
-      .groupBy('gift.currency')
-      .getRawMany();
+      .getRawOne();
 
-    return rawResults.map((r) => ({
-      weddingId,
-      currency: r.currency as GiftCurrency,
-      totalEnvelopes: parseInt(r.totalEnvelopes, 10) || 0,
-      totalAmount: parseFloat(r.totalAmount) || 0,
-      totalCash: parseFloat(r.totalCash) || 0,
-      countCash: parseInt(r.countCash, 10) || 0,
-      totalQr: parseFloat(r.totalQr) || 0,
-      countQr: parseInt(r.countQr, 10) || 0,
-    }));
+    const totalEnvelopes = parseInt(raw?.totalEnvelopes, 10) || 0;
+    const countCash = parseInt(raw?.countCash, 10) || 0;
+    const countQr = parseInt(raw?.countQr, 10) || 0;
+
+    return [
+      {
+        weddingId,
+        currency: GiftCurrency.USD,
+        totalEnvelopes,
+        totalAmount: parseFloat(raw?.totalUSD) || 0,
+        totalCash: parseFloat(raw?.cashUSD) || 0,
+        countCash,
+        totalQr: parseFloat(raw?.qrUSD) || 0,
+        countQr,
+      },
+      {
+        weddingId,
+        currency: GiftCurrency.KHR,
+        totalEnvelopes: 0,
+        totalAmount: parseFloat(raw?.totalKHR) || 0,
+        totalCash: parseFloat(raw?.cashKHR) || 0,
+        countCash,
+        totalQr: parseFloat(raw?.qrKHR) || 0,
+        countQr,
+      },
+    ];
   }
 
   async getClerkReconciliation(
@@ -210,29 +231,23 @@ export class GiftsService {
       .addSelect("COALESCE(clerk.fullName, 'Unassigned Clerk')", 'clerkName')
       .addSelect('COUNT(gift.id)', 'totalEnvelopes')
       .addSelect(
-        `SUM(CASE WHEN gift.payment_method = 'CASH' AND gift.currency = 'USD' THEN gift.amount ELSE 0 END)`,
+        `SUM(CASE WHEN gift.payment_method = 'CASH' THEN gift.amount_usd ELSE 0 END)`,
         'cashUSD',
       )
       .addSelect(
-        `SUM(CASE WHEN gift.payment_method = 'CASH' AND gift.currency = 'KHR' THEN gift.amount ELSE 0 END)`,
+        `SUM(CASE WHEN gift.payment_method = 'CASH' THEN gift.amount_khr ELSE 0 END)`,
         'cashKHR',
       )
       .addSelect(
-        `SUM(CASE WHEN gift.payment_method != 'CASH' AND gift.currency = 'USD' THEN gift.amount ELSE 0 END)`,
+        `SUM(CASE WHEN gift.payment_method != 'CASH' THEN gift.amount_usd ELSE 0 END)`,
         'qrUSD',
       )
       .addSelect(
-        `SUM(CASE WHEN gift.payment_method != 'CASH' AND gift.currency = 'KHR' THEN gift.amount ELSE 0 END)`,
+        `SUM(CASE WHEN gift.payment_method != 'CASH' THEN gift.amount_khr ELSE 0 END)`,
         'qrKHR',
       )
-      .addSelect(
-        `SUM(CASE WHEN gift.currency = 'USD' THEN gift.amount ELSE 0 END)`,
-        'totalUSD',
-      )
-      .addSelect(
-        `SUM(CASE WHEN gift.currency = 'KHR' THEN gift.amount ELSE 0 END)`,
-        'totalKHR',
-      )
+      .addSelect(`SUM(gift.amount_usd)`, 'totalUSD')
+      .addSelect(`SUM(gift.amount_khr)`, 'totalKHR')
       .where('gift.weddingId = :weddingId', { weddingId })
       .groupBy('gift.recordedBy')
       .addGroupBy('clerk.fullName')
@@ -278,16 +293,17 @@ export class GiftsService {
     let totalKHR = 0;
 
     for (const gift of gifts) {
-      const amount = Number(gift.amount) || 0;
+      const usd = Number(gift.amountUSD) || 0;
+      const khr = Number(gift.amountKHR) || 0;
       const isQr = gift.paymentMethod === 'QR_CODE' || gift.paymentMethod === 'BANK_TRANSFER';
-      if (gift.currency === 'USD') {
-        totalUSD += amount;
-        if (isQr) qrUSD += amount;
-        else cashUSD += amount;
-      } else if (gift.currency === 'KHR') {
-        totalKHR += amount;
-        if (isQr) qrKHR += amount;
-        else cashKHR += amount;
+      totalUSD += usd;
+      totalKHR += khr;
+      if (isQr) {
+        qrUSD += usd;
+        qrKHR += khr;
+      } else {
+        cashUSD += usd;
+        cashKHR += khr;
       }
     }
 
@@ -342,12 +358,37 @@ export class GiftsService {
 
   async update(id: string, dto: UpdateGiftDto): Promise<Gift> {
     const gift = await this.findById(id);
-    Object.assign(gift, dto);
+    const { amount, currency, ...rest } = dto;
+    Object.assign(gift, rest);
+    if (dto.amountUSD !== undefined) gift.amountUSD = dto.amountUSD;
+    if (dto.amountKHR !== undefined) gift.amountKHR = dto.amountKHR;
+    if (amount !== undefined && dto.amountUSD === undefined && dto.amountKHR === undefined) {
+      if (currency === GiftCurrency.KHR) {
+        gift.amountKHR = amount;
+        gift.amountUSD = 0;
+      } else {
+        gift.amountUSD = amount;
+        gift.amountKHR = 0;
+      }
+    }
     return this.giftRepository.save(gift);
   }
 
   async remove(id: string): Promise<void> {
     const gift = await this.findById(id);
+    const guestId = gift.guestId;
     await this.giftRepository.remove(gift);
+
+    if (guestId) {
+      const remainingCount = await this.giftRepository.count({
+        where: { guestId },
+      });
+      if (remainingCount === 0) {
+        await this.guestRepository.update(
+          { id: guestId },
+          { invitationStatus: InvitationStatus.INVITED },
+        );
+      }
+    }
   }
 }

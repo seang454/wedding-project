@@ -49,15 +49,17 @@ export default function DashboardPage() {
   const { activeWedding: currentWedding, activeWeddingId: weddingId, isLoading: loadingWeddings } = useActiveWedding();
 
   const { data: summaries } = useGiftSummary(weddingId);
-  const { data: guestsData } = useGuests(weddingId, 1, 100);
+  const { data: guestsData } = useGuests(weddingId, 1, 1);
+  const { data: attendedGuestsData } = useGuests(weddingId, 1, 1, {
+    status: 'ATTENDED',
+  });
 
   const summaryUSD = summaries?.find((s) => s.currency === 'USD');
   const summaryKHR = summaries?.find((s) => s.currency === 'KHR');
 
   const totalEnvelopes = (summaryUSD?.totalEnvelopes || 0) + (summaryKHR?.totalEnvelopes || 0);
   const totalGuests = guestsData?.meta?.itemCount || 0;
-  const attendedGuests =
-    guestsData?.data?.filter((g) => g.invitationStatus === 'ATTENDED').length || 0;
+  const attendedGuests = attendedGuestsData?.meta?.itemCount || 0;
   const absentGuests = Math.max(0, totalGuests - attendedGuests);
   const attendanceRate = totalGuests > 0 ? Math.round((attendedGuests / totalGuests) * 100) : 0;
 

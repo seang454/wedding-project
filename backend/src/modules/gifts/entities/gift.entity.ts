@@ -43,15 +43,11 @@ export class Gift {
   @Column({ name: 'guest_name_snapshot', length: 100 })
   guestNameSnapshot: string;
 
-  @Column({ type: 'numeric', precision: 12, scale: 2 })
-  amount: number;
+  @Column({ name: 'amount_usd', type: 'numeric', precision: 12, scale: 2, default: 0 })
+  amountUSD: number;
 
-  @Column({
-    type: 'varchar',
-    length: 3,
-    default: GiftCurrency.USD,
-  })
-  currency: GiftCurrency;
+  @Column({ name: 'amount_khr', type: 'numeric', precision: 15, scale: 2, default: 0 })
+  amountKHR: number;
 
   @Column({
     name: 'payment_method',

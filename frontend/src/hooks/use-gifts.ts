@@ -102,6 +102,7 @@ export function useRecordGift(weddingId: string) {
       queryClient.invalidateQueries({ queryKey: ['gifts', weddingId] });
       queryClient.invalidateQueries({ queryKey: ['gift-summary', weddingId] });
       queryClient.invalidateQueries({ queryKey: ['clerk-reconciliation', weddingId] });
+      queryClient.invalidateQueries({ queryKey: ['clerk-reconciliation-detail', weddingId] });
       queryClient.invalidateQueries({ queryKey: ['guests', weddingId] });
       queryClient.invalidateQueries({ queryKey: ['guests-search', weddingId] });
       queryClient.invalidateQueries({ queryKey: ['gifts-export', weddingId] });
@@ -119,6 +120,8 @@ export function useUpdateGift(weddingId: string) {
     }: {
       id: string;
       data: Partial<{
+        amountUSD: number;
+        amountKHR: number;
         amount: number;
         currency: string;
         paymentMethod: string;
@@ -152,6 +155,8 @@ export function useDeleteGift(weddingId: string) {
       queryClient.invalidateQueries({ queryKey: ['gifts', weddingId] });
       queryClient.invalidateQueries({ queryKey: ['gift-summary', weddingId] });
       queryClient.invalidateQueries({ queryKey: ['clerk-reconciliation', weddingId] });
+      queryClient.invalidateQueries({ queryKey: ['clerk-reconciliation-detail', weddingId] });
+      queryClient.invalidateQueries({ queryKey: ['guests', weddingId] });
       queryClient.invalidateQueries({ queryKey: ['guests-search', weddingId] });
       queryClient.invalidateQueries({ queryKey: ['gifts-export', weddingId] });
     },

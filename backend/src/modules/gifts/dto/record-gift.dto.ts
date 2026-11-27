@@ -11,6 +11,7 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { GiftCurrency, PaymentMethod } from '../entities/gift.entity';
+import { GuestSide } from '../../guests/entities/guest.entity';
 
 export class RecordGiftDto {
   @ApiProperty({ example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' })
@@ -103,6 +104,11 @@ export class RecordGiftDto {
   @IsOptional()
   @IsString()
   phone?: string;
+
+  @ApiPropertyOptional({ enum: GuestSide, default: GuestSide.BOTH })
+  @IsOptional()
+  @IsEnum(GuestSide)
+  side?: GuestSide;
 
   @ApiPropertyOptional({ example: 12 })
   @IsOptional()
