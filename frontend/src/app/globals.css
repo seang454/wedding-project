@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --text-xs: 0.8125rem;  /* 13px: crisp form labels, badges & captions */
@@ -11,6 +12,7 @@
 }
 
 :root {
+  color-scheme: light;
   --background: #FAF9F5;
   --foreground: #2B3927;
 
