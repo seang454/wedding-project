@@ -1,0 +1,117 @@
+@import "tailwindcss";
+
+@theme {
+  --text-xs: 0.8125rem;  /* 13px: crisp form labels, badges & captions */
+  --text-sm: 0.9375rem;  /* 15px: comfortable Khmer inputs, buttons & body */
+  --text-base: 1rem;     /* 16px: primary reading & card titles */
+  --text-lg: 1.125rem;   /* 18px */
+  --text-xl: 1.25rem;    /* 20px */
+  --text-2xl: 1.5rem;    /* 24px: section & page headings */
+  --text-3xl: 1.875rem;  /* 30px: large headings */
+}
+
+:root {
+  --background: #FAF9F5;
+  --foreground: #2B3927;
+
+  /* Botanical Wedding Palette */
+  --wedding-forest: #2B3927;
+  --wedding-forest-light: #3E513A;
+  --sage-primary: #2B3927;
+  --sage-leaf: #5D7258;
+  --sage-tint: #EBF0E8;
+  --ruby-accent: #8C2D38;
+  --antique-gold: #B89758;
+  --ivory-surface: #FFFFFF;
+  --border-muted: #E5E2D9;
+}
+
+html {
+  scrollbar-gutter: stable;
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: 'Kantumruy Pro', 'Siemreap', 'Khmer OS Siemreap', 'Khmer OS Battambang', sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+  font-feature-settings: "rlig" 1, "calt" 1;
+}
+
+/* Authentic Khmer 3D Royal Wedding Calligraphy Style (inspired by traditional wedding cards) */
+.font-khmer-moul {
+  font-family: 'Moul', 'Moulpali', 'Khmer OS Muol', 'Khmer OS Muol Light', serif;
+}
+
+.font-khmer-title {
+  font-family: 'Kantumruy Pro', 'Siemreap', 'Khmer OS Siemreap', sans-serif !important;
+  letter-spacing: 0.01em;
+}
+
+.font-khmer-heading {
+  font-family: 'Kantumruy Pro', 'Siemreap', 'Khmer OS Siemreap', sans-serif !important;
+  letter-spacing: 0.01em;
+}
+
+.font-khmer-koulen {
+  font-family: 'Koulen', 'Moul', 'Khmer OS Muol Light', sans-serif !important;
+  letter-spacing: 0.02em;
+}
+
+.font-khmer-body {
+  font-family: 'Kantumruy Pro', 'Siemreap', 'Khmer OS Siemreap', sans-serif !important;
+  line-height: 1.8;
+}
+
+.khmer-calligraphy-3d {
+  font-family: 'Moul', 'Moulpali', 'Khmer OS Muol', 'Khmer OS Muol Light', serif;
+  color: #FFFFFF;
+  -webkit-text-stroke: 1.2px #C59F54;
+  text-shadow:
+    1px 1px 0px #C8A359,
+    2px 2px 0px #B58F44,
+    3px 3px 0px #977132,
+    4px 4px 0px #7D5B23,
+    5px 5px 3px rgba(35, 25, 10, 0.4),
+    0px 8px 24px rgba(184, 151, 88, 0.35);
+  letter-spacing: 0.02em;
+}
+
+.khmer-calligraphy-sub {
+  font-family: 'Moulpali', 'Moul', 'Khmer OS Muol Light', serif;
+  color: #9C7D39;
+  letter-spacing: 0.06em;
+}
+
+/* Custom scrollbars matching the botanical sage palette */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #8A9D83;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #607559;
+}
+
+@keyframes pageFadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-page-enter {
+  animation: pageFadeSlideIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}

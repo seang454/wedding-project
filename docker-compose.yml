@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  # 1. LOCAL POSTGRESQL DATABASE
+  postgres:
+    image: postgres:16-alpine
+    container_name: wedding_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: wedding_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # 2. LOCAL S3 STORAGE (MinIO)
+  minio:
+    image: minio/minio:latest
+    container_name: wedding_minio
+    restart: always
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadminpassword
+    ports:
+      - "9000:9000"   # S3 API (Backend communicates here)
+      - "9001:9001"   # Web Console (http://localhost:9001)
+    volumes:
+      - minio_data:/data
+
+volumes:
+  postgres_data:
+  minio_data:
