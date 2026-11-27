@@ -302,16 +302,16 @@ export default function HomePage() {
 
             {/* Action Buttons in Khmer */}
             <div className="pt-2 flex flex-wrap items-center justify-center gap-4 font-khmer-heading">
-              <Link href="/weddings">
-                <Button size="lg" className="h-12 px-8 rounded-full bg-gradient-to-r from-[#2E3D2A] to-[#455B3F] hover:from-[#212D1E] hover:to-[#364931] text-white font-bold shadow-lg shadow-[#2E3D2A]/20 gap-2 text-base border border-[#B89758]/40 cursor-pointer">
-                  <Gift className="h-5 w-5 text-[#E7DEC8]" />
-                  <span>បើកតុទទួលភ្ញៀវ</span>
+              <Link href="/weddings" className="group">
+                <Button size="lg" className="relative overflow-hidden h-12 px-8 rounded-full bg-gradient-to-r from-[#2E3D2A] to-[#455B3F] hover:from-[#212D1E] hover:to-[#364931] text-white font-bold shadow-lg shadow-[#2E3D2A]/20 hover:shadow-xl hover:shadow-[#2E3D2A]/30 gap-2 text-base border border-[#B89758]/40 transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.03] active:scale-[0.97] cursor-pointer before:absolute before:inset-0 before:-translate-x-full group-hover:before:translate-x-full before:transition-transform before:duration-700 before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent">
+                  <Gift className="h-5 w-5 text-[#E7DEC8] transition-transform duration-300 group-hover:-rotate-12 group-hover:scale-110" />
+                  <span className="relative z-10">បើកតុទទួលភ្ញៀវ</span>
                 </Button>
               </Link>
 
-              <Link href="/weddings">
-                <Button size="lg" variant="outline" className="h-12 px-8 rounded-full border-[#CBD5C8] hover:bg-[#EBF0E8]/70 text-[#2B3927] font-bold gap-2 text-base bg-white/90 backdrop-blur-sm shadow-xs cursor-pointer">
-                  <Laptop className="h-4 w-4 text-[#52644F]" />
+              <Link href="/weddings" className="group">
+                <Button size="lg" variant="outline" className="h-12 px-8 rounded-full border-[#CBD5C8] hover:border-[#C59F54]/70 hover:bg-[#EBF0E8]/80 text-[#2B3927] font-bold gap-2 text-base bg-white/90 backdrop-blur-sm shadow-xs hover:shadow-lg transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.03] active:scale-[0.97] cursor-pointer">
+                  <Laptop className="h-4 w-4 text-[#52644F] transition-transform duration-300 group-hover:scale-110" />
                   <span>ផ្ទាំងគ្រប់គ្រង</span>
                 </Button>
               </Link>
@@ -320,9 +320,9 @@ export default function HomePage() {
                 size="lg"
                 variant="outline"
                 onClick={() => setShowIntro(true)}
-                className="h-12 px-6 rounded-full border-[#C59F54]/60 hover:bg-[#FAF8F3] text-[#2B3927] font-bold gap-2 text-sm bg-[#FAF8F3]/80 backdrop-blur-sm shadow-xs cursor-pointer"
+                className="group h-12 px-6 rounded-full border-[#C59F54]/60 hover:border-[#C59F54] hover:bg-[#FAF8F3] text-[#2B3927] font-bold gap-2 text-sm bg-[#FAF8F3]/80 backdrop-blur-sm shadow-xs hover:shadow-lg transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.03] active:scale-[0.97] cursor-pointer"
               >
-                <Play className="h-4 w-4 fill-[#7C622D] text-[#7C622D]" />
+                <Play className="h-4 w-4 fill-[#7C622D] text-[#7C622D] transition-transform duration-300 group-hover:scale-125" />
                 <span>ទស្សនាវីដេអូ</span>
               </Button>
             </div>
