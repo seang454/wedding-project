@@ -180,13 +180,15 @@ export default function DashboardPage() {
           {/* LEFT: Couple Avatar & Names */}
           <div className="flex items-center gap-5 sm:gap-6 min-w-0">
             {/* Ornate Gold Frame with Couple Portrait */}
-            <div className="relative w-22 h-22 sm:w-28 sm:h-28 rounded-2xl bg-[#F7F4EC] p-1.5 border-2 border-[#E6C673] ring-4 ring-[#C59F54]/30 overflow-hidden shrink-0 shadow-xl flex items-center justify-center">
-              <img
-                src={currentWedding.imageUrl || '/wedding/defaultWeddingImage.jpg'}
-                alt={`${currentWedding.groomName} & ${currentWedding.brideName}`}
-                className="w-full h-full object-contain drop-shadow-sm hover:scale-105 transition-transform duration-300"
-              />
-              <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-[#243521] border border-[#E6C673] flex items-center justify-center shadow-xs">
+            <div className="relative shrink-0">
+              <div className="w-22 h-22 sm:w-28 sm:h-28 rounded-full bg-[#F7F4EC] p-1 border-2 border-[#E6C673] ring-4 ring-[#C59F54]/30 overflow-hidden shadow-xl flex items-center justify-center">
+                <img
+                  src={currentWedding.imageUrl || '/wedding/defaultWeddingImage.jpg'}
+                  alt={`${currentWedding.groomName} & ${currentWedding.brideName}`}
+                  className="w-full h-full object-cover rounded-full drop-shadow-sm hover:scale-105 transition-transform duration-300"
+                />
+              </div>
+              <div className="absolute bottom-0 right-0 h-7 w-7 rounded-full bg-[#243521] border-2 border-[#E6C673] flex items-center justify-center shadow-sm">
                 <Heart className="h-3.5 w-3.5 text-[#E6C673] fill-[#E6C673]" />
               </div>
             </div>

@@ -303,14 +303,14 @@ export default function HomePage() {
             {/* Action Buttons in Khmer */}
             <div className="pt-2 flex flex-wrap items-center justify-center gap-4 font-khmer-heading">
               <Link href="/weddings">
-                <Button size="lg" className="h-12 px-8 bg-gradient-to-r from-[#2E3D2A] to-[#455B3F] hover:from-[#212D1E] hover:to-[#364931] text-white font-bold shadow-lg shadow-[#2E3D2A]/20 gap-2 text-base border border-[#B89758]/40">
+                <Button size="lg" className="h-12 px-8 rounded-full bg-gradient-to-r from-[#2E3D2A] to-[#455B3F] hover:from-[#212D1E] hover:to-[#364931] text-white font-bold shadow-lg shadow-[#2E3D2A]/20 gap-2 text-base border border-[#B89758]/40 cursor-pointer">
                   <Gift className="h-5 w-5 text-[#E7DEC8]" />
                   <span>បើកតុទទួលភ្ញៀវ</span>
                 </Button>
               </Link>
 
               <Link href="/weddings">
-                <Button size="lg" variant="outline" className="h-12 px-8 border-[#CBD5C8] hover:bg-[#EBF0E8]/70 text-[#2B3927] font-bold gap-2 text-base bg-white/90 backdrop-blur-sm shadow-xs">
+                <Button size="lg" variant="outline" className="h-12 px-8 rounded-full border-[#CBD5C8] hover:bg-[#EBF0E8]/70 text-[#2B3927] font-bold gap-2 text-base bg-white/90 backdrop-blur-sm shadow-xs cursor-pointer">
                   <Laptop className="h-4 w-4 text-[#52644F]" />
                   <span>ផ្ទាំងគ្រប់គ្រង</span>
                 </Button>
@@ -320,7 +320,7 @@ export default function HomePage() {
                 size="lg"
                 variant="outline"
                 onClick={() => setShowIntro(true)}
-                className="h-12 px-6 border-[#C59F54]/60 hover:bg-[#FAF8F3] text-[#2B3927] font-bold gap-2 text-sm bg-[#FAF8F3]/80 backdrop-blur-sm shadow-xs"
+                className="h-12 px-6 rounded-full border-[#C59F54]/60 hover:bg-[#FAF8F3] text-[#2B3927] font-bold gap-2 text-sm bg-[#FAF8F3]/80 backdrop-blur-sm shadow-xs cursor-pointer"
               >
                 <Play className="h-4 w-4 fill-[#7C622D] text-[#7C622D]" />
                 <span>ទស្សនាវីដេអូ</span>
