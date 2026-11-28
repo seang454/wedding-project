@@ -104,7 +104,7 @@ export class UsersController {
       throw new ForbiddenException('You do not have permission to view this user');
     }
 
-    const { passwordHash: _pw, ...safeUser } = found;
+    const { passwordHash: _pw, refreshTokenHash: _rt, ...safeUser } = found;
     return safeUser;
   }
 
@@ -118,6 +118,6 @@ export class UsersController {
   })
   async findAll() {
     const users = await this.usersService.findAll();
-    return users.map(({ passwordHash: _pw, ...rest }) => rest);
+    return users.map(({ passwordHash: _pw, refreshTokenHash: _rt, ...rest }) => rest);
   }
 }

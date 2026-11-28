@@ -68,7 +68,12 @@ export function useAuth() {
     },
   });
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await apiClient.post('/auth/logout');
+    } catch {
+      // Ignore network errors during logout
+    }
     localStorage.removeItem('accessToken');
     localStorage.removeItem('user');
     document.cookie = 'accessToken=; path=/; max-age=0';

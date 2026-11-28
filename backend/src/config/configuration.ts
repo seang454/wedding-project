@@ -7,7 +7,8 @@ export default () => ({
   },
   jwt: {
     secret: process.env.JWT_SECRET || 'default_jwt_secret',
-    expiresIn: process.env.JWT_EXPIRATION || '7d',
+    expiresIn: process.env.JWT_EXPIRATION || '15m',
+    refreshExpiresIn: process.env.JWT_REFRESH_EXPIRATION || '7d',
   },
   s3: {
     endpoint: process.env.S3_ENDPOINT || 'http://localhost:9000',

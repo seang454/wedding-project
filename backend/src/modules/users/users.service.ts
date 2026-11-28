@@ -21,6 +21,10 @@ export class UsersService {
     private weddingsRepository: Repository<Wedding>,
   ) {}
 
+  async updateRefreshTokenHash(userId: string, refreshTokenHash: string | null): Promise<void> {
+    await this.usersRepository.update({ id: userId }, { refreshTokenHash });
+  }
+
   async findById(id: string): Promise<User | null> {
     return this.usersRepository.findOne({ where: { id, isDeleted: false } });
   }
@@ -57,7 +61,7 @@ export class UsersService {
     }
 
     const clerks = await qb.orderBy('clerk.createdAt', 'DESC').getMany();
-    return clerks.map(({ passwordHash: _pw, ...rest }) => rest);
+    return clerks.map(({ passwordHash: _pw, refreshTokenHash: _rt, ...rest }) => rest);
   }
 
   async createClerk(dto: CreateClerkDto, ownerId: string) {
@@ -84,7 +88,7 @@ export class UsersService {
       assignedWeddings,
     });
 
-    const { passwordHash: _pw, ...safeClerk } = clerk;
+    const { passwordHash: _pw, refreshTokenHash: _rt, ...safeClerk } = clerk;
     return safeClerk;
   }
 
@@ -114,7 +118,7 @@ export class UsersService {
 
     clerk.assignedWeddings = weddings;
     const saved = await this.usersRepository.save(clerk);
-    const { passwordHash: _pw, ...safeClerk } = saved;
+    const { passwordHash: _pw, refreshTokenHash: _rt, ...safeClerk } = saved;
     return safeClerk;
   }
 
@@ -173,7 +177,7 @@ export class UsersService {
     }
 
     const saved = await this.usersRepository.save(clerk);
-    const { passwordHash: _pw, ...safeClerk } = saved;
+    const { passwordHash: _pw, refreshTokenHash: _rt, ...safeClerk } = saved;
     return safeClerk;
   }
 

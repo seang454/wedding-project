@@ -35,6 +35,9 @@ export class User {
   @Column({ name: 'password_hash', length: 255 })
   passwordHash: string;
 
+  @Column({ name: 'refresh_token_hash', type: 'varchar', length: 255, nullable: true })
+  refreshTokenHash?: string | null;
+
   @Column({
     type: 'varchar',
     length: 20,

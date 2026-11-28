@@ -17,33 +17,46 @@ function RealtimeSync() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-    if (!token) return;
-
     const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
-    const eventSource = new EventSource(`${apiBase}/events/stream?token=${encodeURIComponent(token)}`);
+    let eventSource: EventSource | null = null;
 
-    eventSource.onmessage = (event) => {
-      try {
-        const parsed = JSON.parse(event.data) as { resource?: string };
-        const resource = parsed?.resource;
-        if (!resource) return;
-
-        const keys = RESOURCE_QUERY_KEYS[resource];
-        if (keys && keys.length > 0) {
-          keys.forEach((key) => {
-            queryClient.invalidateQueries({ queryKey: [key] });
-          });
-        } else {
-          queryClient.invalidateQueries();
-        }
-      } catch {
-        // Ignore heartbeat or non-JSON frames
+    const connect = () => {
+      if (eventSource) {
+        eventSource.close();
+        eventSource = null;
       }
+      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      if (!token) return;
+
+      eventSource = new EventSource(`${apiBase}/events/stream?token=${encodeURIComponent(token)}`);
+      eventSource.onmessage = (event) => {
+        try {
+          const parsed = JSON.parse(event.data) as { resource?: string };
+          const resource = parsed?.resource;
+          if (!resource) return;
+
+          const keys = RESOURCE_QUERY_KEYS[resource];
+          if (keys && keys.length > 0) {
+            keys.forEach((key) => {
+              queryClient.invalidateQueries({ queryKey: [key] });
+            });
+          } else {
+            queryClient.invalidateQueries();
+          }
+        } catch {
+          // Ignore heartbeat or non-JSON frames
+        }
+      };
     };
 
+    connect();
+    window.addEventListener('auth:token-refreshed', connect);
+
     return () => {
-      eventSource.close();
+      window.removeEventListener('auth:token-refreshed', connect);
+      if (eventSource) {
+        eventSource.close();
+      }
     };
   }, [queryClient]);
 
