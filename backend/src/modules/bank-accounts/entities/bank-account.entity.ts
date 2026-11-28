@@ -33,6 +33,9 @@ export class BankAccount {
   @Column({ name: 'is_primary', type: 'boolean', default: false })
   isPrimary: boolean;
 
+  @Column({ name: 'is_deleted', type: 'boolean', default: false })
+  isDeleted: boolean;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 

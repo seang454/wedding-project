@@ -71,6 +71,7 @@ export default function StandaloneWeddingsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editWedding, setEditWedding] = useState<Wedding | null>(null);
   const [deleteWedding, setDeleteWedding] = useState<Wedding | null>(null);
+  const [deleteConfirmStep, setDeleteConfirmStep] = useState<1 | 2>(1);
   const [imagePreview, setImagePreview] = useState<string>('/wedding/defaultWeddingImage.jpg');
   const [uploadingImage, setUploadingImage] = useState(false);
   const [selectedProvinceCode, setSelectedProvinceCode] = useState('');
@@ -209,12 +210,17 @@ export default function StandaloneWeddingsPage() {
     }
   };
 
+  const closeDeleteModal = () => {
+    setDeleteWedding(null);
+    setDeleteConfirmStep(1);
+  };
+
   const confirmDelete = async () => {
     if (!deleteWedding) return;
     try {
       await deleteMutation.mutateAsync(deleteWedding.id);
       toast.success('បានលុបទិន្នន័យមង្គលការដោយជោគជ័យ!');
-      setDeleteWedding(null);
+      closeDeleteModal();
     } catch {
       toast.error('មានបញ្ហាក្នុងការលុបទិន្នន័យ');
     }
@@ -280,8 +286,8 @@ export default function StandaloneWeddingsPage() {
 
         {/* Empty State */}
         {!isLoading && (!weddings || weddings.length === 0) && (
-          <Card className="p-8 sm:p-14 text-center bg-white/95 border border-[#E8DFC9] rounded-3xl shadow-sm">
-            <div className="h-16 w-16 mx-auto rounded-2xl bg-[#EAF0E7] flex items-center justify-center mb-4 border border-[#C59F54]/30">
+          <Card className="p-8 sm:p-14 text-center rounded-3xl border border-white/80 bg-gradient-to-b from-white/25 via-white/5 to-white/15 backdrop-blur-sm backdrop-saturate-150 shadow-[0_8px_32px_rgba(36,53,33,0.12),inset_0_2px_4px_rgba(255,255,255,0.95),inset_0_-1px_3px_rgba(255,255,255,0.5)]">
+            <div className="h-16 w-16 mx-auto rounded-2xl bg-white/60 backdrop-blur-xs flex items-center justify-center mb-4 border border-[#C59F54]/30 shadow-xs">
               <Heart className="h-8 w-8 text-[#C59F54]" />
             </div>
             <h3 className="font-khmer-heading text-lg font-bold text-[#212E1E]">
@@ -421,8 +427,8 @@ export default function StandaloneWeddingsPage() {
               </div>
 
               {filteredWeddings.length === 0 ? (
-                <Card className="p-8 sm:p-12 text-center bg-white/90 backdrop-blur-md border border-[#E8DFC9] rounded-3xl shadow-sm">
-                  <div className="h-14 w-14 mx-auto rounded-full bg-[#EAF0E7] flex items-center justify-center mb-3 border border-[#C59F54]/30">
+                <Card className="p-8 sm:p-12 text-center rounded-3xl border border-white/80 bg-gradient-to-b from-white/25 via-white/5 to-white/15 backdrop-blur-sm backdrop-saturate-150 shadow-[0_8px_32px_rgba(36,53,33,0.12),inset_0_2px_4px_rgba(255,255,255,0.95),inset_0_-1px_3px_rgba(255,255,255,0.5)]">
+                  <div className="h-14 w-14 mx-auto rounded-full bg-white/60 backdrop-blur-xs flex items-center justify-center mb-3 border border-[#C59F54]/30 shadow-xs">
                     <Search className="h-6 w-6 text-[#C59F54]" />
                   </div>
                   <h3 className="font-khmer-heading text-base font-bold text-[#212E1E]">
@@ -545,7 +551,10 @@ export default function StandaloneWeddingsPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setDeleteWedding(wedding)}
+                            onClick={() => {
+                              setDeleteConfirmStep(1);
+                              setDeleteWedding(wedding);
+                            }}
                             className="font-khmer-heading text-xs rounded-xl border-red-200 text-red-600 hover:bg-red-50 h-8 px-2.5 cursor-pointer"
                           >
                             <Trash2 className="mr-1 h-3.5 w-3.5" /> លុប
@@ -855,43 +864,78 @@ export default function StandaloneWeddingsPage() {
           </DialogContent>
         </Dialog>
 
-        {/* DELETE CONFIRM MODAL */}
-        <Dialog open={!!deleteWedding} onOpenChange={(o) => !o && setDeleteWedding(null)}>
+        {/* DELETE CONFIRM MODAL (2-STEP ALERT) */}
+        <Dialog open={!!deleteWedding} onOpenChange={(o) => !o && closeDeleteModal()}>
           <DialogContent
-            onClose={() => setDeleteWedding(null)}
+            onClose={closeDeleteModal}
             className="bg-[#FAF8F3] border-[#E8DFC9] rounded-3xl font-khmer-body max-w-sm"
           >
             <DialogHeader>
               <DialogTitle className="font-khmer-heading text-base font-bold text-red-700 flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5" /> បញ្ជាក់ការលុប
+                <AlertTriangle className="h-5 w-5 shrink-0" />
+                {deleteConfirmStep === 1
+                  ? 'បញ្ជាក់ការលុប'
+                  : 'ការព្រមានចុងក្រោយ — លុបជាអចិន្ត្រៃយ៍!'}
               </DialogTitle>
             </DialogHeader>
-            <p className="text-sm text-[#5C6E57] font-khmer-body">
-              តើអ្នកប្រាកដថាចង់លុបព័ត៌មានមង្គលការ{' '}
-              <strong className="text-[#212E1E]">
-                {deleteWedding?.groomName} &amp; {deleteWedding?.brideName}
-              </strong>
-              ? ទិន្នន័យចំណងដៃ និងភ្ញៀវទាំងអស់នឹងត្រូវបានលុបផងដែរ។
-            </p>
-            <div className="flex gap-2 mt-2">
-              <Button
-                variant="outline"
-                className="flex-1 font-khmer-heading rounded-xl border-[#D8C7A8]"
-                onClick={() => setDeleteWedding(null)}
-              >
-                បោះបង់
-              </Button>
-              <Button
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-khmer-heading rounded-xl"
-                onClick={confirmDelete}
-                disabled={deleteMutation.isPending}
-              >
-                {deleteMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                ) : null}
-                លុបចោល
-              </Button>
-            </div>
+
+            {deleteConfirmStep === 1 ? (
+              <>
+                <p className="text-sm text-[#5C6E57] font-khmer-body">
+                  តើអ្នកប្រាកដថាចង់លុបព័ត៌មានមង្គលការ{' '}
+                  <strong className="text-[#212E1E]">
+                    {deleteWedding?.groomName} &amp; {deleteWedding?.brideName}
+                  </strong>
+                  ? ទិន្នន័យចំណងដៃ និងភ្ញៀវទាំងអស់នឹងត្រូវបានលុបផងដែរ។
+                </p>
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1 font-khmer-heading rounded-xl border-[#D8C7A8]"
+                    onClick={closeDeleteModal}
+                  >
+                    បោះបង់
+                  </Button>
+                  <Button
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white font-khmer-heading rounded-xl"
+                    onClick={() => setDeleteConfirmStep(2)}
+                  >
+                    លុបចោល
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-800 leading-relaxed space-y-1.5">
+                  <p className="font-semibold">
+                    សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ!
+                  </p>
+                  <p>
+                    មង្គលការ <strong>{deleteWedding?.groomName} &amp; {deleteWedding?.brideName}</strong> រួមទាំងបញ្ជីភ្ញៀវ កំណត់ត្រាចំណងដៃ និងគណនីធនាគារទាំងអស់នឹងត្រូវលុបបាត់ទាំងស្រុង។ តើអ្នកពិតជាចង់លុបមែនទេ?
+                  </p>
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1 font-khmer-heading rounded-xl border-[#D8C7A8]"
+                    onClick={closeDeleteModal}
+                    disabled={deleteMutation.isPending}
+                  >
+                    ទេ (រក្សាទុក)
+                  </Button>
+                  <Button
+                    className="flex-1 bg-red-700 hover:bg-red-800 text-white font-khmer-heading rounded-xl"
+                    onClick={confirmDelete}
+                    disabled={deleteMutation.isPending}
+                  >
+                    {deleteMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    ) : null}
+                    បាទ/ចាស លុបទាំងអស់
+                  </Button>
+                </div>
+              </>
+            )}
           </DialogContent>
         </Dialog>
       </main>

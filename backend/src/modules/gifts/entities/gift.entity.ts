@@ -28,6 +28,10 @@ export enum PaymentMethod {
 @Entity('gifts')
 @Index('idx_gifts_wedding_date', ['weddingId', 'createdAt'])
 @Index('idx_gifts_guest', ['guestId'])
+@Index('idx_gifts_active_guest', ['guestId'], {
+  unique: true,
+  where: '"is_deleted" = false',
+})
 @Index('idx_gifts_bank', ['bankAccountId'])
 @Index('idx_gifts_clerk', ['recordedBy'])
 export class Gift {
@@ -37,8 +41,8 @@ export class Gift {
   @Column({ name: 'wedding_id', type: 'uuid' })
   weddingId: string;
 
-  @Column({ name: 'guest_id', type: 'uuid', nullable: true })
-  guestId?: string;
+  @Column({ name: 'guest_id', type: 'uuid', nullable: false })
+  guestId: string;
 
   @Column({ name: 'guest_name_snapshot', length: 100 })
   guestNameSnapshot: string;
@@ -72,6 +76,9 @@ export class Gift {
   @Column({ name: 'recorded_by', type: 'uuid', nullable: true })
   recordedBy?: string;
 
+  @Column({ name: 'is_deleted', type: 'boolean', default: false })
+  isDeleted: boolean;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
@@ -83,11 +90,11 @@ export class Gift {
   wedding: Wedding;
 
   @ManyToOne(() => Guest, (guest) => guest.gifts, {
-    onDelete: 'SET NULL',
-    nullable: true,
+    onDelete: 'RESTRICT',
+    nullable: false,
   })
   @JoinColumn({ name: 'guest_id' })
-  guest?: Guest;
+  guest: Guest;
 
   @ManyToOne(() => BankAccount, (account) => account.gifts, {
     onDelete: 'SET NULL',

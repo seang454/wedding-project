@@ -8,6 +8,8 @@ import {
   Param,
   UseGuards,
   ParseUUIDPipe,
+  ForbiddenException,
+  NotFoundException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -87,8 +89,23 @@ export class UsersController {
     description: 'User details',
     type: UserResponseDto,
   })
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.usersService.findById(id);
+  async findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() currentUser: User) {
+    const found = await this.usersService.findById(id);
+    if (!found) {
+      throw new NotFoundException(`User with ID "${id}" not found`);
+    }
+
+    const isAdmin = currentUser.role === UserRole.ADMIN;
+    const isSelf = found.id === currentUser.id;
+    const isOwnClerk =
+      found.role === UserRole.CLERK && found.createdByOwnerId === currentUser.id;
+
+    if (!isAdmin && !isSelf && !isOwnClerk) {
+      throw new ForbiddenException('You do not have permission to view this user');
+    }
+
+    const { passwordHash: _pw, ...safeUser } = found;
+    return safeUser;
   }
 
   @Get()
@@ -99,7 +116,8 @@ export class UsersController {
     description: 'List of all users',
     type: [UserResponseDto],
   })
-  findAll() {
-    return this.usersService.findAll();
+  async findAll() {
+    const users = await this.usersService.findAll();
+    return users.map(({ passwordHash: _pw, ...rest }) => rest);
   }
 }

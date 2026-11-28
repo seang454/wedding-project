@@ -26,13 +26,15 @@ export class BankAccountsService {
 
   async findByWedding(weddingId: string): Promise<BankAccount[]> {
     return this.bankAccountRepository.find({
-      where: { weddingId },
+      where: { weddingId, isDeleted: false },
       order: { isPrimary: 'DESC', createdAt: 'ASC' },
     });
   }
 
   async findById(id: string): Promise<BankAccount> {
-    const account = await this.bankAccountRepository.findOne({ where: { id } });
+    const account = await this.bankAccountRepository.findOne({
+      where: { id, isDeleted: false },
+    });
     if (!account) {
       throw new NotFoundException(`Bank account with ID "${id}" not found`);
     }
@@ -68,6 +70,7 @@ export class BankAccountsService {
 
   async remove(id: string): Promise<void> {
     const account = await this.findById(id);
-    await this.bankAccountRepository.remove(account);
+    account.isDeleted = true;
+    await this.bankAccountRepository.save(account);
   }
 }

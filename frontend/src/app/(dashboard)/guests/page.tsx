@@ -70,6 +70,7 @@ export default function GuestsPage() {
 
   // Edit & Delete state
   const [deleteGuestId, setDeleteGuestId] = useState<string | null>(null);
+  const [confirmResetGiftOpen, setConfirmResetGiftOpen] = useState(false);
   const [editingGuest, setEditingGuest] = useState<{
     id: string;
     name: string;
@@ -143,20 +144,29 @@ export default function GuestsPage() {
   };
 
   // Delete Guest
+  const deletingGuest = guestsData?.data?.find((g) => g.id === deleteGuestId) || null;
+  const deletingGuestHasGifts = (deletingGuest?.gifts?.length ?? 0) > 0;
+
   const handleDeleteGuest = async () => {
     if (!deleteGuestId) return;
+    if (deletingGuestHasGifts) {
+      toast.error('មិនអាចលុបភ្ញៀវដែលមានកំណត់ត្រាចំណងដៃរួចហើយបានទេ។ សូមលុបកំណត់ត្រាចំណងដៃជាមុនសិន!');
+      return;
+    }
     try {
       await deleteGuestMutation.mutateAsync(deleteGuestId);
       toast.success('បានលុបភ្ញៀវដោយជោគជ័យ!');
       setDeleteGuestId(null);
-    } catch {
-      toast.error('មានបញ្ហាក្នុងការលុបភ្ញៀវ');
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'មានបញ្ហាក្នុងការលុបភ្ញៀវ';
+      toast.error(msg);
     }
   };
 
   // Update Guest
-  const handleUpdateGuest = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const performUpdateGuest = async () => {
     if (!editingGuest || !editingGuest.name.trim()) return toast.error('សូមបញ្ចូលឈ្មោះភ្ញៀវ');
 
     try {
@@ -177,7 +187,7 @@ export default function GuestsPage() {
         },
       });
 
-      if (editingGuest.hasGifts) {
+      if (editingGuest.hasGifts && editingGuest.invitationStatus !== 'INVITED') {
         const ops: Promise<unknown>[] = [];
         const common = {
           paymentMethod: editingGuest.giftPaymentMethod,
@@ -253,10 +263,23 @@ export default function GuestsPage() {
       }
 
       toast.success('បានកែប្រែព័ត៌មានភ្ញៀវដោយជោគជ័យ!');
+      setConfirmResetGiftOpen(false);
       setEditingGuest(null);
     } catch {
       toast.error('មានបញ្ហាក្នុងការកែប្រែព័ត៌មានភ្ញៀវ');
     }
+  };
+
+  const handleUpdateGuest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingGuest || !editingGuest.name.trim()) return toast.error('សូមបញ្ចូលឈ្មោះភ្ញៀវ');
+
+    if (editingGuest.hasGifts && editingGuest.invitationStatus === 'INVITED') {
+      setConfirmResetGiftOpen(true);
+      return;
+    }
+
+    await performUpdateGuest();
   };
 
   // Export to CSV (with UTF-8 BOM for Microsoft Excel compatibility)
@@ -1261,6 +1284,10 @@ export default function GuestsPage() {
                       <div className="p-4 rounded-xl bg-[#FAF8F3] border border-dashed border-[#DFD5C3] text-center text-xs text-[#8A9C84]">
                         ភ្ញៀវនេះមិនទាន់មានកំណត់ត្រាចំណងដៃនៅឡើយទេ
                       </div>
+                    ) : editingGuest.invitationStatus === 'INVITED' ? (
+                      <div className="p-4 rounded-xl bg-[#FDF6EC] border border-dashed border-[#E6C587] text-center text-xs text-[#8C6D23]">
+                        ស្ថានភាពត្រូវបានប្តូរទៅ «បានអញ្ជើញ» — កំណត់ត្រាចំណងដៃនឹងត្រូវលុបចេញដោយស្វ័យប្រវត្តិនៅពេលរក្សាទុក ដើម្បីអាចកត់ត្រាឡើងវិញបាន។
+                      </div>
                     ) : (
                       <div className="p-4 rounded-xl bg-[#FAF8F3] border border-[#E8DFC9] space-y-3.5">
                         {/* 3 Currency Mode Pills */}
@@ -1430,24 +1457,66 @@ export default function GuestsPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-2">
-            <p className="text-sm text-[#5C6E57]">
-              តើអ្នកពិតជាចង់លុបភ្ញៀវនេះចេញពីបញ្ជីមែនទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានឡើយ។
-            </p>
+            {deletingGuestHasGifts ? (
+              <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 leading-relaxed">
+                មិនអាចលុបភ្ញៀវ <span className="font-semibold">{deletingGuest?.name}</span> បានទេ ព្រោះភ្ញៀវនេះមានកំណត់ត្រាចំណងដៃរួចហើយ។ សូមទៅលុបកំណត់ត្រាចំណងដៃនៅទំព័រ «កត់ត្រាចំណងដៃ» ជាមុនសិន!
+              </div>
+            ) : (
+              <p className="text-sm text-[#5C6E57]">
+                តើអ្នកពិតជាចង់លុបភ្ញៀវនេះចេញពីបញ្ជីមែនទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានឡើយ។
+              </p>
+            )}
             <div className="flex justify-end gap-2 pt-2">
               <Button
                 variant="outline"
                 onClick={() => setDeleteGuestId(null)}
                 className="rounded-xl border-[#D8C7A8] text-[#3E513A] hover:bg-[#EAE4D5] text-xs h-9"
               >
+                {deletingGuestHasGifts ? 'បិទ' : 'បោះបង់'}
+              </Button>
+              {!deletingGuestHasGifts && (
+                <Button
+                  onClick={handleDeleteGuest}
+                  disabled={deleteGuestMutation.isPending}
+                  className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs h-9 px-4 font-bold cursor-pointer"
+                >
+                  {deleteGuestMutation.isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+                  យល់ព្រមលុប
+                </Button>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* CONFIRM RESET TO INVITED (REMOVES GIFT) DIALOG */}
+      <Dialog open={confirmResetGiftOpen} onOpenChange={(open) => !open && setConfirmResetGiftOpen(false)}>
+        <DialogContent onClose={() => setConfirmResetGiftOpen(false)} className="max-w-md bg-[#FAF8F3] border-[#E8DFC9] rounded-3xl font-khmer-body">
+          <DialogHeader>
+            <DialogTitle className="font-khmer-heading text-lg font-bold text-[#8C6D23] flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-[#C59F54]" />
+              បញ្ជាក់ការលុបកំណត់ត្រាចំណងដៃ
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <p className="text-sm text-[#5C6E57] leading-relaxed">
+              ការប្តូរស្ថានភាពភ្ញៀវ <span className="font-semibold text-[#243521]">{editingGuest?.name}</span> ទៅជា «បានអញ្ជើញ» នឹងលុបកំណត់ត្រាចំណងដៃដែលមានស្រាប់ចេញពីប្រព័ន្ធ និងបេឡា ដើម្បីអាចកត់ត្រាឡើងវិញបាន។ តើអ្នកពិតជាចង់បន្តមែនទេ?
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setConfirmResetGiftOpen(false)}
+                className="rounded-xl border-[#D8C7A8] text-[#3E513A] hover:bg-[#EAE4D5] text-xs h-9"
+              >
                 បោះបង់
               </Button>
               <Button
-                onClick={handleDeleteGuest}
-                disabled={deleteGuestMutation.isPending}
-                className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs h-9 px-4 font-bold cursor-pointer"
+                onClick={performUpdateGuest}
+                disabled={updateGuestMutation.isPending}
+                className="bg-[#2F432B] hover:bg-[#233320] text-white rounded-xl text-xs h-9 px-4 font-bold cursor-pointer"
               >
-                {deleteGuestMutation.isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
-                យល់ព្រមលុប
+                {updateGuestMutation.isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+                បញ្ជាក់ និងលុបចំណងដៃ
               </Button>
             </div>
           </div>

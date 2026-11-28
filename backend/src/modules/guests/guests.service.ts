@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Guest, InvitationStatus } from './entities/guest.entity';
+import { Gift } from '../gifts/entities/gift.entity';
 import { CreateGuestDto } from './dto/create-guest.dto';
 import { UpdateGuestDto } from './dto/update-guest.dto';
 import { QueryGuestDto } from './dto/query-guest.dto';
@@ -43,7 +44,7 @@ export class GuestsService {
 
   async findAllForExport(weddingId: string): Promise<Guest[]> {
     return this.guestRepository.find({
-      where: { weddingId },
+      where: { weddingId, isDeleted: false },
       order: { name: 'ASC' },
     });
   }
@@ -61,8 +62,9 @@ export class GuestsService {
     const queryBuilder = this.guestRepository.createQueryBuilder('guest');
 
     queryBuilder
-      .leftJoinAndSelect('guest.gifts', 'gift')
-      .where('guest.weddingId = :weddingId', { weddingId });
+      .leftJoinAndSelect('guest.gifts', 'gift', 'gift.isDeleted = false')
+      .where('guest.weddingId = :weddingId', { weddingId })
+      .andWhere('guest.isDeleted = false');
 
     const strippedSearch = filters?.search?.replace(/\s+/g, '');
     if (strippedSearch) {
@@ -104,8 +106,9 @@ export class GuestsService {
   async search(queryDto: QueryGuestDto): Promise<Guest[]> {
     const qb = this.guestRepository
       .createQueryBuilder('guest')
-      .leftJoin('guest.gifts', 'gift')
+      .leftJoin('guest.gifts', 'gift', 'gift.isDeleted = false')
       .where('guest.weddingId = :weddingId', { weddingId: queryDto.weddingId })
+      .andWhere('guest.isDeleted = false')
       .andWhere('gift.id IS NULL');
 
     const strippedSearch = queryDto.search?.replace(/\s+/g, '');
@@ -123,10 +126,12 @@ export class GuestsService {
   }
 
   async findById(id: string): Promise<Guest> {
-    const guest = await this.guestRepository.findOne({
-      where: { id },
-      relations: { gifts: true },
-    });
+    const guest = await this.guestRepository
+      .createQueryBuilder('guest')
+      .leftJoinAndSelect('guest.gifts', 'gift', 'gift.isDeleted = false')
+      .where('guest.id = :id', { id })
+      .andWhere('guest.isDeleted = false')
+      .getOne();
 
     if (!guest) {
       throw new NotFoundException(`Guest with ID "${id}" not found`);
@@ -136,9 +141,28 @@ export class GuestsService {
   }
 
   async update(id: string, dto: UpdateGuestDto): Promise<Guest> {
-    const guest = await this.findById(id);
-    Object.assign(guest, dto);
-    return this.guestRepository.save(guest);
+    return this.guestRepository.manager.transaction(async (manager) => {
+      const guest = await manager
+        .getRepository(Guest)
+        .createQueryBuilder('guest')
+        .leftJoinAndSelect('guest.gifts', 'gift', 'gift.isDeleted = false')
+        .where('guest.id = :id', { id })
+        .andWhere('guest.isDeleted = false')
+        .getOne();
+
+      if (!guest) {
+        throw new NotFoundException(`Guest with ID "${id}" not found`);
+      }
+
+      Object.assign(guest, dto);
+
+      if (dto.invitationStatus === InvitationStatus.INVITED) {
+        await manager.update(Gift, { guestId: id, isDeleted: false }, { isDeleted: true });
+        guest.gifts = [];
+      }
+
+      return manager.save(Guest, guest);
+    });
   }
 
   async checkIn(id: string): Promise<Guest> {
@@ -149,6 +173,12 @@ export class GuestsService {
 
   async remove(id: string): Promise<void> {
     const guest = await this.findById(id);
-    await this.guestRepository.remove(guest);
+    if (guest.gifts && guest.gifts.length > 0) {
+      throw new ConflictException(
+        'មិនអាចលុបភ្ញៀវដែលមានកំណត់ត្រាចំណងដៃរួចហើយបានទេ។ សូមលុបកំណត់ត្រាចំណងដៃជាមុនសិន!',
+      );
+    }
+    guest.isDeleted = true;
+    await this.guestRepository.save(guest);
   }
 }

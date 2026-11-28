@@ -45,6 +45,9 @@ export class User {
   @Column({ name: 'created_by_owner_id', type: 'uuid', nullable: true })
   createdByOwnerId?: string;
 
+  @Column({ name: 'is_deleted', type: 'boolean', default: false })
+  isDeleted: boolean;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 

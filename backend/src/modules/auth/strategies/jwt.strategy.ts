@@ -16,12 +16,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private configService: ConfigService,
     private usersService: UsersService,
   ) {
+    const jwtSecret = configService.get<string>('JWT_SECRET');
+    if (!jwtSecret && configService.get<string>('NODE_ENV') === 'production') {
+      throw new Error('JWT_SECRET environment variable must be set in production');
+    }
+
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+        (req) => (typeof req?.query?.token === 'string' ? req.query.token : null),
+      ]),
       ignoreExpiration: false,
       secretOrKey:
-        configService.get<string>('JWT_SECRET') ||
-        'super_secret_wedding_jwt_key_change_in_production_2026',
+        jwtSecret || 'super_secret_wedding_jwt_key_change_in_production_2026',
     });
   }
 

@@ -17,8 +17,11 @@ function RealtimeSync() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+    if (!token) return;
+
     const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
-    const eventSource = new EventSource(`${apiBase}/events/stream`);
+    const eventSource = new EventSource(`${apiBase}/events/stream?token=${encodeURIComponent(token)}`);
 
     eventSource.onmessage = (event) => {
       try {

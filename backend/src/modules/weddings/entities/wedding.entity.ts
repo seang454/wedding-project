@@ -60,6 +60,9 @@ export class Wedding {
   @Column({ name: 'image_url', length: 500, nullable: true })
   imageUrl: string;
 
+  @Column({ name: 'is_deleted', type: 'boolean', default: false })
+  isDeleted: boolean;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 

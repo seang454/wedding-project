@@ -46,23 +46,27 @@ async function bootstrap() {
     }),
   );
 
-  // 7. Swagger Documentation: http://localhost:5000/api/docs
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('Wedding Gift Registration API')
-    .setDescription(
-      'Enterprise REST API documentation for Wedding Gift Registration System',
-    )
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
+  // 7. Swagger Documentation: Disabled in production for security
+  if (process.env.NODE_ENV !== 'production') {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('Wedding Gift Registration API')
+      .setDescription(
+        'Enterprise REST API documentation for Wedding Gift Registration System',
+      )
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
 
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, document);
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('api/docs', app, document);
+  }
 
   const port = process.env.PORT || 5000;
   await app.listen(port);
   logger.log(`🚀 NestJS Backend running at: http://localhost:${port}/api`);
-  logger.log(`📚 Swagger API Docs available at: http://localhost:${port}/api/docs`);
+  if (process.env.NODE_ENV !== 'production') {
+    logger.log(`📚 Swagger API Docs available at: http://localhost:${port}/api/docs`);
+  }
 }
 
 void bootstrap();

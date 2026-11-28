@@ -22,31 +22,41 @@ export class UsersService {
   ) {}
 
   async findById(id: string): Promise<User | null> {
-    return this.usersRepository.findOne({ where: { id } });
+    return this.usersRepository.findOne({ where: { id, isDeleted: false } });
   }
 
   async findByEmailOrPhone(identifier: string): Promise<User | null> {
     return this.usersRepository.findOne({
-      where: [{ email: identifier }, { phone: identifier }],
+      where: [
+        { email: identifier, isDeleted: false },
+        { phone: identifier, isDeleted: false },
+      ],
     });
   }
 
   async findAll(): Promise<User[]> {
     return this.usersRepository.find({
+      where: { isDeleted: false },
       order: { createdAt: 'DESC' },
     });
   }
 
   async findClerks(ownerId?: string, isAdmin = false) {
-    const where =
-      isAdmin || !ownerId
-        ? { role: UserRole.CLERK }
-        : { role: UserRole.CLERK, createdByOwnerId: ownerId };
-    const clerks = await this.usersRepository.find({
-      where,
-      relations: { assignedWeddings: true },
-      order: { createdAt: 'DESC' },
-    });
+    const qb = this.usersRepository
+      .createQueryBuilder('clerk')
+      .leftJoinAndSelect(
+        'clerk.assignedWeddings',
+        'wedding',
+        'wedding.isDeleted = false',
+      )
+      .where('clerk.role = :role', { role: UserRole.CLERK })
+      .andWhere('clerk.isDeleted = false');
+
+    if (!isAdmin && ownerId) {
+      qb.andWhere('clerk.createdByOwnerId = :ownerId', { ownerId });
+    }
+
+    const clerks = await qb.orderBy('clerk.createdAt', 'DESC').getMany();
     return clerks.map(({ passwordHash: _pw, ...rest }) => rest);
   }
 
@@ -169,7 +179,7 @@ export class UsersService {
 
   async removeClerk(clerkId: string, ownerId: string, isAdmin = false): Promise<void> {
     const clerk = await this.usersRepository.findOne({
-      where: { id: clerkId, role: UserRole.CLERK },
+      where: { id: clerkId, role: UserRole.CLERK, isDeleted: false },
     });
     if (!clerk) {
       throw new NotFoundException(`Clerk with ID "${clerkId}" not found`);
@@ -177,7 +187,8 @@ export class UsersService {
     if (!isAdmin && clerk.createdByOwnerId !== ownerId) {
       throw new ForbiddenException('You do not have permission to delete this clerk');
     }
-    await this.usersRepository.remove(clerk);
+    clerk.isDeleted = true;
+    await this.usersRepository.save(clerk);
   }
 
   async create(userData: Partial<User>): Promise<User> {

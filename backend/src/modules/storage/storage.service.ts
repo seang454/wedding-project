@@ -25,15 +25,24 @@ export class StorageService implements OnModuleInit {
     this.bucketName =
       this.configService.get<string>('S3_BUCKET_NAME') || 'wedding-receipts';
 
+    const isProd = this.configService.get<string>('NODE_ENV') === 'production';
+    const accessKeyId =
+      this.configService.get<string>('S3_ACCESS_KEY') ||
+      (isProd ? '' : 'minioadmin');
+    const secretAccessKey =
+      this.configService.get<string>('S3_SECRET_KEY') ||
+      (isProd ? '' : 'minioadminpassword');
+
+    if (isProd && (!accessKeyId || !secretAccessKey)) {
+      this.logger.warn('S3_ACCESS_KEY or S3_SECRET_KEY is not configured in production.');
+    }
+
     this.s3Client = new S3Client({
       region: this.configService.get<string>('S3_REGION') || 'us-east-1',
       endpoint: this.endpoint,
       credentials: {
-        accessKeyId:
-          this.configService.get<string>('S3_ACCESS_KEY') || 'minioadmin',
-        secretAccessKey:
-          this.configService.get<string>('S3_SECRET_KEY') ||
-          'minioadminpassword',
+        accessKeyId,
+        secretAccessKey,
       },
       forcePathStyle:
         this.configService.get<string>('S3_FORCE_PATH_STYLE') === 'true',

@@ -14,14 +14,19 @@ import { UsersModule } from '../users/users.module';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        secret:
-          configService.get<string>('JWT_SECRET') ||
-          'super_secret_wedding_jwt_key_change_in_production_2026',
-        signOptions: {
-          expiresIn: (configService.get<string>('JWT_EXPIRATION') || '7d') as any,
-        },
-      }),
+      useFactory: (configService: ConfigService) => {
+        const jwtSecret = configService.get<string>('JWT_SECRET');
+        if (!jwtSecret && configService.get<string>('NODE_ENV') === 'production') {
+          throw new Error('JWT_SECRET environment variable must be set in production');
+        }
+        return {
+          secret:
+            jwtSecret || 'super_secret_wedding_jwt_key_change_in_production_2026',
+          signOptions: {
+            expiresIn: (configService.get<string>('JWT_EXPIRATION') || '7d') as any,
+          },
+        };
+      },
     }),
   ],
   controllers: [AuthController],

@@ -88,6 +88,12 @@ export function useCreateGuest(weddingId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['guests', weddingId] });
       queryClient.invalidateQueries({ queryKey: ['guests-export', weddingId] });
+      queryClient.invalidateQueries({ queryKey: ['guests-search', weddingId] });
+      queryClient.invalidateQueries({ queryKey: ['gifts', weddingId] });
+      queryClient.invalidateQueries({ queryKey: ['gift-summary', weddingId] });
+      queryClient.invalidateQueries({ queryKey: ['clerk-reconciliation', weddingId] });
+      queryClient.invalidateQueries({ queryKey: ['clerk-reconciliation-detail', weddingId] });
+      queryClient.invalidateQueries({ queryKey: ['gifts-export', weddingId] });
     },
   });
 }
@@ -103,6 +109,12 @@ export function useBatchImportGuests(weddingId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['guests', weddingId] });
       queryClient.invalidateQueries({ queryKey: ['guests-export', weddingId] });
+      queryClient.invalidateQueries({ queryKey: ['guests-search', weddingId] });
+      queryClient.invalidateQueries({ queryKey: ['gifts', weddingId] });
+      queryClient.invalidateQueries({ queryKey: ['gift-summary', weddingId] });
+      queryClient.invalidateQueries({ queryKey: ['clerk-reconciliation', weddingId] });
+      queryClient.invalidateQueries({ queryKey: ['clerk-reconciliation-detail', weddingId] });
+      queryClient.invalidateQueries({ queryKey: ['gifts-export', weddingId] });
     },
   });
 }
@@ -118,6 +130,12 @@ export function useUpdateGuest(weddingId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['guests', weddingId] });
       queryClient.invalidateQueries({ queryKey: ['guests-export', weddingId] });
+      queryClient.invalidateQueries({ queryKey: ['guests-search', weddingId] });
+      queryClient.invalidateQueries({ queryKey: ['gifts', weddingId] });
+      queryClient.invalidateQueries({ queryKey: ['gift-summary', weddingId] });
+      queryClient.invalidateQueries({ queryKey: ['clerk-reconciliation', weddingId] });
+      queryClient.invalidateQueries({ queryKey: ['clerk-reconciliation-detail', weddingId] });
+      queryClient.invalidateQueries({ queryKey: ['gifts-export', weddingId] });
     },
   });
 }
@@ -147,6 +165,12 @@ export function useDeleteGuest(weddingId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['guests', weddingId] });
       queryClient.invalidateQueries({ queryKey: ['guests-export', weddingId] });
+      queryClient.invalidateQueries({ queryKey: ['guests-search', weddingId] });
+      queryClient.invalidateQueries({ queryKey: ['gifts', weddingId] });
+      queryClient.invalidateQueries({ queryKey: ['gift-summary', weddingId] });
+      queryClient.invalidateQueries({ queryKey: ['clerk-reconciliation', weddingId] });
+      queryClient.invalidateQueries({ queryKey: ['clerk-reconciliation-detail', weddingId] });
+      queryClient.invalidateQueries({ queryKey: ['gifts-export', weddingId] });
     },
   });
 }

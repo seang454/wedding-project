@@ -29,7 +29,8 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
-  @ApiOperation({ summary: 'Register a new user (Bride/Groom Owner or Clerk)' })
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @ApiOperation({ summary: 'Register a new user (Owner)' })
   @ApiResponse({
     status: HttpStatus.CREATED,
     description: 'User registered successfully with JWT',

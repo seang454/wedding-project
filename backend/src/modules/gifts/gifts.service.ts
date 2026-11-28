@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Gift, GiftCurrency, PaymentMethod } from './entities/gift.entity';
@@ -56,21 +61,25 @@ export class GiftsService {
       else if (targetGuestId) {
         const guestRepo = manager.getRepository(Guest);
         const existingGuest = await guestRepo.findOne({
-          where: { id: targetGuestId },
+          where: { id: targetGuestId, weddingId: dto.weddingId, isDeleted: false },
         });
 
-        if (existingGuest) {
-          existingGuest.invitationStatus = InvitationStatus.ATTENDED;
-          if (dto.phone) existingGuest.phone = dto.phone;
-          if (dto.side) existingGuest.side = dto.side;
-          if (dto.tableNumber) existingGuest.tableNumber = dto.tableNumber;
-          if (dto.province) existingGuest.province = dto.province;
-          if (dto.district) existingGuest.district = dto.district;
-          if (dto.commune) existingGuest.commune = dto.commune;
-          if (dto.village) existingGuest.village = dto.village;
-          if (dto.guestNote) existingGuest.notes = dto.guestNote;
-          await guestRepo.save(existingGuest);
+        if (!existingGuest) {
+          throw new NotFoundException(`Guest with ID "${targetGuestId}" not found in this wedding`);
         }
+
+        existingGuest.invitationStatus = InvitationStatus.ATTENDED;
+        if (dto.phone) existingGuest.phone = dto.phone;
+        if (dto.side) existingGuest.side = dto.side;
+        if (dto.tableNumber) existingGuest.tableNumber = dto.tableNumber;
+        if (dto.province) existingGuest.province = dto.province;
+        if (dto.district) existingGuest.district = dto.district;
+        if (dto.commune) existingGuest.commune = dto.commune;
+        if (dto.village) existingGuest.village = dto.village;
+        if (dto.guestNote) existingGuest.notes = dto.guestNote;
+        await guestRepo.save(existingGuest);
+      } else {
+        throw new BadRequestException('Guest is required when recording a gift');
       }
 
       // Determine USD & KHR amounts (stored in a single row per envelope)
@@ -91,6 +100,13 @@ export class GiftsService {
 
       // Record single Gift row atomically
       const giftRepo = manager.getRepository(Gift);
+      const existingActiveGift = await giftRepo.findOne({
+        where: { guestId: targetGuestId, isDeleted: false },
+      });
+      if (existingActiveGift) {
+        throw new ConflictException('ភ្ញៀវនេះត្រូវបានកត់ត្រាចំណងដៃរួចហើយ!');
+      }
+
       const newGift = giftRepo.create({
         weddingId: dto.weddingId,
         guestId: targetGuestId,
@@ -105,7 +121,14 @@ export class GiftsService {
         recordedBy: clerkId,
       });
 
-      return giftRepo.save(newGift);
+      try {
+        return await giftRepo.save(newGift);
+      } catch (err: unknown) {
+        if ((err as { code?: string })?.code === '23505') {
+          throw new ConflictException('ភ្ញៀវនេះត្រូវបានកត់ត្រាចំណងដៃរួចហើយ!');
+        }
+        throw err;
+      }
     });
   }
 
@@ -115,7 +138,8 @@ export class GiftsService {
       .leftJoinAndSelect('gift.guest', 'guest')
       .leftJoinAndSelect('gift.bankAccount', 'bankAccount')
       .leftJoinAndSelect('gift.recordedByUser', 'clerk')
-      .where('gift.weddingId = :weddingId', { weddingId: queryDto.weddingId });
+      .where('gift.weddingId = :weddingId', { weddingId: queryDto.weddingId })
+      .andWhere('gift.isDeleted = false');
 
     if (queryDto.currency === GiftCurrency.USD) {
       qb.andWhere('gift.amountUSD > 0');
@@ -191,6 +215,7 @@ export class GiftsService {
         'countQr',
       )
       .where('gift.weddingId = :weddingId', { weddingId })
+      .andWhere('gift.isDeleted = false')
       .getRawOne();
 
     const totalEnvelopes = parseInt(raw?.totalEnvelopes, 10) || 0;
@@ -249,6 +274,7 @@ export class GiftsService {
       .addSelect(`SUM(gift.amount_usd)`, 'totalUSD')
       .addSelect(`SUM(gift.amount_khr)`, 'totalKHR')
       .where('gift.weddingId = :weddingId', { weddingId })
+      .andWhere('gift.isDeleted = false')
       .groupBy('gift.recordedBy')
       .addGroupBy('clerk.fullName')
       .getRawMany();
@@ -276,7 +302,9 @@ export class GiftsService {
     }
 
     const gifts = await this.giftRepository.find({
-      where: isAll ? { weddingId } : { weddingId, recordedBy: clerkId },
+      where: isAll
+        ? { weddingId, isDeleted: false }
+        : { weddingId, recordedBy: clerkId, isDeleted: false },
       relations: {
         guest: true,
         bankAccount: true,
@@ -329,7 +357,7 @@ export class GiftsService {
 
   async findById(id: string): Promise<Gift> {
     const gift = await this.giftRepository.findOne({
-      where: { id },
+      where: { id, isDeleted: false },
       relations: {
         guest: true,
         bankAccount: true,
@@ -346,7 +374,7 @@ export class GiftsService {
 
   async findAllForExport(weddingId: string): Promise<Gift[]> {
     return this.giftRepository.find({
-      where: { weddingId },
+      where: { weddingId, isDeleted: false },
       relations: {
         guest: true,
         bankAccount: true,
@@ -377,15 +405,16 @@ export class GiftsService {
   async remove(id: string): Promise<void> {
     const gift = await this.findById(id);
     const guestId = gift.guestId;
-    await this.giftRepository.remove(gift);
+    gift.isDeleted = true;
+    await this.giftRepository.save(gift);
 
     if (guestId) {
       const remainingCount = await this.giftRepository.count({
-        where: { guestId },
+        where: { guestId, isDeleted: false },
       });
       if (remainingCount === 0) {
         await this.guestRepository.update(
-          { id: guestId },
+          { id: guestId, isDeleted: false },
           { invitationStatus: InvitationStatus.INVITED },
         );
       }

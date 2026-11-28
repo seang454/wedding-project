@@ -76,6 +76,9 @@ export class Guest {
   @Column({ type: 'text', nullable: true })
   notes?: string;
 
+  @Column({ name: 'is_deleted', type: 'boolean', default: false })
+  isDeleted: boolean;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 

@@ -24,10 +24,10 @@ export class WeddingAccessService {
     if (user.role === UserRole.CLERK || user.role === UserRole.ACCOUNTANT) {
       const assigned = await weddingRepo
         .createQueryBuilder('wedding')
-        .innerJoin('wedding.clerks', 'clerk', 'clerk.id = :userId', {
+        .innerJoin('wedding.clerks', 'clerk', 'clerk.id = :userId AND clerk.isDeleted = false', {
           userId: user.id,
         })
-        .where('wedding.id = :weddingId', { weddingId })
+        .where('wedding.id = :weddingId AND wedding.isDeleted = false', { weddingId })
         .getCount();
 
       if (assigned === 0) {
@@ -37,7 +37,7 @@ export class WeddingAccessService {
     }
 
     const wedding = await weddingRepo.findOne({
-      where: { id: weddingId },
+      where: { id: weddingId, isDeleted: false },
       select: { id: true, ownerId: true },
     });
 
